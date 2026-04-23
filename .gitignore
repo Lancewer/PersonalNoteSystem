@@ -1,3 +1,19 @@
+# Backend
 backend/*.db
+backend/.env
+backend/__pycache__/
+backend/**/*.pyc
+backend/.pytest_cache/
+backend/uploads/
+
+# Frontend
 frontend/node_modules
 frontend/dist
+frontend/.vite/
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
     UPLOAD_DIR: str = "./uploads"
+    CORS_ORIGINS: str = ""  # Comma-separated list, empty = allow all for dev
 
     class Config:
         env_file = ".env"
