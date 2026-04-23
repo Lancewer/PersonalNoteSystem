@@ -20,3 +20,11 @@ export const updateNote = (id: string, content: string): Promise<Note> => {
 export const deleteNote = (id: string): Promise<void> => {
   return request.delete(`/notes/${id}`).then(() => undefined)
 }
+
+export const uploadAttachment = (noteId: string, file: File): Promise<{ id: string; file_type: string; file_path: string }> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post(`/notes/${noteId}/attachments`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then(res => res.data)
+}

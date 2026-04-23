@@ -28,8 +28,8 @@ onMounted(() => {
   notesStore.fetchNotes(true)
 })
 
-async function handleCreate(content: string) {
-  await notesStore.createNote(content)
+async function handleCreate(content: string, files: File[]) {
+  await notesStore.createNoteWithAttachments(content, files)
 }
 
 async function handleDelete(id: string) {

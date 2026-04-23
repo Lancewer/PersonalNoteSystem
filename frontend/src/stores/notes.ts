@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Note, Tag } from '../types'
-import { getNotes, createNote as apiCreateNote, deleteNote as apiDeleteNote } from '../api/notes'
+import { getNotes, createNote as apiCreateNote, deleteNote as apiDeleteNote, uploadAttachment } from '../api/notes'
 
 export const useNotesStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
@@ -38,6 +38,19 @@ export const useNotesStore = defineStore('notes', () => {
     notes.value.unshift(newNote)
   }
 
+  async function createNoteWithAttachments(content: string, files: File[]) {
+    const newNote = await apiCreateNote(content)
+    for (const file of files) {
+      try {
+        const attachment = await uploadAttachment(newNote.id, file)
+        newNote.attachments.push(attachment)
+      } catch (e) {
+        console.error('Attachment upload failed:', e)
+      }
+    }
+    notes.value.unshift(newNote)
+  }
+
   async function removeNote(id: string) {
     await apiDeleteNote(id)
     notes.value = notes.value.filter(n => n.id !== id)
@@ -47,5 +60,5 @@ export const useNotesStore = defineStore('notes', () => {
     activeTag.value = tag
   }
 
-  return { notes, loading, hasMore, activeTag, fetchNotes, createNote, removeNote, filterByTag }
+  return { notes, loading, hasMore, activeTag, fetchNotes, createNote, createNoteWithAttachments, removeNote, filterByTag }
 })
