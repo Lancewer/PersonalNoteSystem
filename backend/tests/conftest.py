@@ -13,6 +13,7 @@ TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/notes_test_db
 def test_db():
     engine = create_engine(TEST_DATABASE_URL)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     try:
