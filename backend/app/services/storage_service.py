@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime
 from fastapi import UploadFile
 from ..config import settings
@@ -25,8 +26,9 @@ def generate_file_path(file_type: str, original_name: str) -> str:
     now = datetime.now()
     date_dir = now.strftime("%Y/%m/%d")
     timestamp = now.strftime("%Y%m%dT%H%M%S")
+    unique_id = uuid.uuid4().hex[:8]
     ext = os.path.splitext(original_name)[1] or f".{file_type}"
-    filename = f"{file_type}_{timestamp}{ext}"
+    filename = f"{file_type}_{timestamp}_{unique_id}{ext}"
     return f"{date_dir}/attachment/{filename}"
 
 
