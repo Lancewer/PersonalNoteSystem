@@ -52,8 +52,13 @@ def get_notes_by_tag(
 
 
 def get_all_child_tag_ids(db: Session, tag_id: UUID) -> list[UUID]:
-    children = db.query(Tag.id).filter(Tag.parent_id == tag_id).all()
-    ids = [c[0] for c in children]
-    for child_id in ids:
-        ids.extend(get_all_child_tag_ids(db, child_id))
+    ids: list[UUID] = []
+    queue = [tag_id]
+    while queue:
+        current_id = queue.pop(0)
+        children = db.query(Tag.id).filter(Tag.parent_id == current_id).all()
+        for (child_id,) in children:
+            if child_id not in ids and child_id != tag_id:
+                ids.append(child_id)
+                queue.append(child_id)
     return ids

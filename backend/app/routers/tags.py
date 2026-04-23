@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 from ..database import get_db
 from ..dependencies import get_current_user
 from ..models.user import User
 from ..schemas.tag import TagCreate, TagTreeNode
-from ..schemas.note import NoteListResponse
 from ..services.tag_service import create_tag, get_tag_tree, get_notes_by_tag
 from ..services.note_service import PAGE_SIZE
 

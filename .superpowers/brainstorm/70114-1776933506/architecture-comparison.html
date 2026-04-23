@@ -1,0 +1,121 @@
+<h2>技术架构方案对比</h2>
+<p class="subtitle">三种不同方案实现「跨平台记录 + 私有化存储」的架构设计。选择最适合你的方案。</p>
+
+<div class="cards">
+  <div class="card" data-choice="pwa-nas" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">方案 A: PWA + NAS 后端（推荐）</div>
+        <div class="mockup-body">
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:8px;">
+            <div style="flex:1;text-align:center;">
+              <div style="background:#3b82f6;color:white;padding:8px;border-radius:8px;margin-bottom:4px;">📱 手机浏览器</div>
+              <div style="font-size:10px;color:#6b7280;">PWA 应用</div>
+            </div>
+            <div style="flex:1;text-align:center;">
+              <div style="background:#10b981;color:white;padding:8px;border-radius:8px;margin-bottom:4px;">💻 电脑浏览器</div>
+              <div style="font-size:10px;color:#6b7280;">Web 应用</div>
+            </div>
+          </div>
+          <div style="text-align:center;padding:8px;font-size:14px;">↓ HTTPS API</div>
+          <div style="background:#f59e0b;color:white;padding:8px;border-radius:8px;text-align:center;margin-bottom:4px;">
+            🖥️ NAS 服务器（Node.js/Python 后端）
+          </div>
+          <div style="display:flex;gap:8px;padding:0 8px;">
+            <div style="flex:1;background:#e5e7eb;padding:6px;border-radius:4px;text-align:center;font-size:10px;">📁 文件系统（Markdown）</div>
+            <div style="flex:1;background:#e5e7eb;padding:6px;border-radius:4px;text-align:center;font-size:10px;">🗄️ SQLite/PostgreSQL</div>
+          </div>
+          <div style="text-align:center;padding:8px;font-size:10px;color:#6b7280;">语音、图片、视频 → 附件目录</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. PWA + NAS 私有化部署</h3>
+      <p><strong>一次开发，处处可用。</strong>手机网页→可安装为 PWA，电脑浏览器直接访问。后端部署在 NAS 上，数据完全本地。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>一套代码 = 手机 + 电脑</li><li>PWA 支持离线/拍照/录音</li><li>数据在 NAS，完全私有</li><li>后续可扩展 RAG</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>NAS 需持续运行</li><li>外网访问需配置</li><li>PWA 能力略弱于原生</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="hybrid-app" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">方案 B: 混合 App + 本地同步</div>
+        <div class="mockup-body">
+          <div style="display:flex;gap:8px;padding:8px;">
+            <div style="flex:1;text-align:center;">
+              <div style="background:#8b5cf6;color:white;padding:8px;border-radius:8px;margin-bottom:4px;">📱 原生 App</div>
+              <div style="font-size:10px;color:#6b7280;">React Native / Flutter</div>
+            </div>
+            <div style="display:flex;align-items:center;font-size:20px;">⟷</div>
+            <div style="flex:1;text-align:center;">
+              <div style="background:#06b6d4;color:white;padding:8px;border-radius:8px;margin-bottom:4px;">💻 桌面 App</div>
+              <div style="font-size:10px;color:#6b7280;">Electron / Tauri</div>
+            </div>
+          </div>
+          <div style="text-align:center;padding:8px;font-size:10px;color:#6b7280;">WebSocket / 直接文件同步</div>
+          <div style="background:#f59e0b;color:white;padding:8px;border-radius:8px;text-align:center;margin-bottom:4px;">
+            📂 本地文件系统（Markdown + 附件文件夹）
+          </div>
+          <div style="text-align:center;padding:4px;font-size:10px;color:#6b7280;">Obsidian 可直接读取</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 原生 App + 文件系统同步</h3>
+      <p><strong>最佳本地体验。</strong>手机端用 React Native，桌面端用 Electron。数据直接写入本地文件系统，与 Obsidian 兼容。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>原生体验最佳</li><li>直接文件系统操作</li><li>完全离线可用</li><li>Obsidian 直接兼容</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>三端开发成本高</li><li>同步需自己实现</li><li>手机存储容量限制</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="obsidian-sync" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">方案 C: Obsidian + 自研同步服务</div>
+        <div class="mockup-body">
+          <div style="display:flex;gap:8px;padding:8px;">
+            <div style="flex:1;text-align:center;">
+              <div style="background:#7c3aed;color:white;padding:8px;border-radius:8px;margin-bottom:4px;">📱 Obsidian Mobile</div>
+            </div>
+            <div style="flex:1;text-align:center;">
+              <div style="background:#64748b;color:white;padding:8px;border-radius:8px;margin-bottom:4px;">🔧 自研录入 App</div>
+              <div style="font-size:10px;color:#6b7280;">快速记录</div>
+            </div>
+          </div>
+          <div style="text-align:center;padding:8px;font-size:14px;">↓ 同步</div>
+          <div style="background:#f59e0b;color:white;padding:8px;border-radius:8px;text-align:center;margin-bottom:4px;">
+            🔄 同步服务（Git / WebDAV / 自研协议）
+          </div>
+          <div style="background:#e5e7eb;padding:6px;border-radius:4px;text-align:center;font-size:10px;">
+            📂 NAS 文件系统（Markdown + 附件）→ Obsidian 直接读取
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Obsidian 生态 + 自研录入工具</h3>
+      <p><strong>利用现有生态。</strong>Obsidian 作为主力浏览/编辑工具，自研一个轻量「录入工具」用于快速记录。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>Obsidian 功能强大</li><li>双链笔记开箱即用</li><li>社区插件丰富</li><li>开发范围小</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>同步方案需自行解决</li><li>Obsidian Mobile 收费</li><li>自定义能力受限</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;padding:16px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd;">
+  <h3>📋 我的推荐</h3>
+  <p><strong>方案 A（PWA + NAS 后端）</strong>最适合你的需求，原因：</p>
+  <ul>
+    <li><strong>开发效率高</strong>：一套代码 = 手机 + 电脑 + 未来桌面端</li>
+    <li><strong>完全私有</strong>：后端部署在 NAS，数据完全掌控</li>
+    <li><strong>多模态友好</strong>：PWA 支持麦克风、相机，语音/拍照直接上传</li>
+    <li><strong>RAG 扩展便利</strong>：后端可集成向量数据库，未来无缝升级</li>
+    <li><strong>Obsidian 可兼容</strong>：后端导出 Markdown 文件，Obsidian 可直接读取</li>
+  </ul>
+</div>

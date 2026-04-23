@@ -1,0 +1,165 @@
+<h2>存储方案详细对比</h2>
+<p class="subtitle">三个开源项目的实际存储方案对比 + 你的最佳选择</p>
+
+<div class="section" style="padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:20px;">
+  <h3>📊 开源项目实际做法</h3>
+  <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr 1fr;">
+    <div style="padding:12px;background:#eff6ff;border-radius:6px;border:1px solid #bfdbfe;">
+      <h4 style="margin:0 0 4px;">Memos (59.1k⭐)</h4>
+      <div class="label">DB-first + 部分MD导出</div>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:12px;">
+        <li>SQLite/PostgreSQL 主存储</li>
+        <li>内容直接存DB</li>
+        <li>附件URL引用</li>
+      </ul>
+    </div>
+    <div style="padding:12px;background:#f0fdf4;border-radius:6px;border:1px solid #bbf7d0;">
+      <h4 style="margin:0 0 4px;">Logseq (42.3k⭐)</h4>
+      <div class="label">纯Markdown文件</div>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:12px;">
+        <li>本地文件夹直接存储</li>
+        <li>Git版本控制</li>
+        <li>Obsidian原生兼容</li>
+      </ul>
+    </div>
+    <div style="padding:12px;background:#fefce8;border-radius:6px;border:1px solid #fde047;">
+      <h4 style="margin:0 0 4px;">Joplin</h4>
+      <div class="label">SQLite + 文件资源</div>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:12px;">
+        <li>DB存笔记元数据</li>
+        <li>.resource/ 存附件</li>
+        <li>可导出MD</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="cards" data-multiselect>
+  <div class="card" data-choice="pure-md" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">纯 Markdown 方案</div>
+        <div class="mockup-body">
+          <div style="padding:12px;background:linear-gradient(to bottom,#f9fafb,#f3f4f6);border-radius:6px;">
+            <div style="font-size:12px;margin-bottom:8px;"><strong>PWA →</strong> 写入 .md 文件</div>
+            <div style="font-family:monospace;font-size:10px;background:white;padding:8px;border-radius:4px;">
+              /notes/<br>
+              ├── 2024-01-15/  <span style="color:#6b7280;"># 日期目录</span><br>
+              │   ├── memo-001.md<br>
+              │   ├── memo-002.md<br>
+              │   └── attachments/<br>
+              │       ├── photo.jpg<br>
+              │       └── voice.mp3<br>
+              └── 2024-01-16/<br>
+                  └── memo-003.md
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 纯 Markdown 文件</h3>
+      <p><strong>最简单，Obsidian直接读取。</strong>但搜索和标签过滤慢（10K条笔记≈200-500ms扫描）。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>100% Obsidian兼容</li><li>Git版本控制天然支持</li><li>无数据库依赖</li><li>备份只需拷文件夹</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>大批量查询慢</li><li>并发编辑需文件锁</li><li>元数据散落于frontmatter</li><li>RAG需额外扫描索引</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">混合方案（推荐）</div>
+        <div class="mockup-body">
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <div style="background:#6366f1;color:white;padding:6px 8px;border-radius:4px;margin-bottom:4px;text-align:center;">SQLite 主存储</div>
+              <div style="font-family:monospace;font-size:9px;background:#f1f5f9;padding:6px;border-radius:4px;">
+                notes (id, content, tags)<br>
+                resources (id, path, type)<br>
+                notes_fts (全文搜索索引)
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;font-size:18px;color:#6b7280;">→</div>
+            <div style="flex:1;">
+              <div style="background:#10b981;color:white;padding:6px 8px;border-radius:4px;margin-bottom:4px;text-align:center;">异步导出 MD</div>
+              <div style="font-family:monospace;font-size:9px;background:#f1f5f9;padding:6px;border-radius:4px;">
+                /export/<br>
+                ├── 2024/01/15/<br>
+                │   └── memo-001.md<br>
+                └── attachments/<br>
+                    └── photo.jpg
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:8px;padding:6px;background:#dbeafe;border-radius:4px;font-size:10px;text-align:center;">
+            Obsidian 目录 ← 实时同步 ← 导出层
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 混合方案（SQLite + MD 导出）</h3>
+      <p><strong>两全其美。</strong>DB做快速查询和RAG，MD文件保兼容 Obsidian。Memos 和 Joplin 都采用的思路。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>查询快 25x（FTS5索引）</li><li>修改方便（精确字段更新）</li><li>RAG 就绪（存embeddings）</li><li>Obsidian仍可兼容</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>架构略复杂</li><li>需维护导出同步逻辑</li><li>DB文件需定期备份</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="pure-db" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">纯数据库方案</div>
+        <div class="mockup-body">
+          <div style="padding:12px;background:white;border:1px solid #e5e7eb;border-radius:4px;">
+            <div style="font-family:monospace;font-size:10px;">
+              <div style="background:#f59e0b;color:white;padding:4px;border-radius:2px;margin-bottom:4px;">-- 只存DB，不导出MD</div>
+              CREATE TABLE notes (<br>
+              &nbsp;&nbsp;id UUID PRIMARY KEY,<br>
+              &nbsp;&nbsp;content TEXT,<br>
+              &nbsp;&nbsp;tags JSON,<br>
+              &nbsp;&nbsp;created_at TIMESTAMP<br>
+              );
+            </div>
+            <div style="text-align:center;padding:8px;font-size:10px;color:#dc2626;">⚠️ 无法被 Obsidian 直接读取</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 纯数据库（不推荐）</h3>
+      <p><strong>性能好，但完全锁定。</strong>数据被锁在DB里，脱离应用就无法读取。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>最佳查询性能</li><li>结构化最强</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>不兼容任何外部工具</li><li>厂商锁定严重</li><li>违反私有化理念</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;padding:16px;background:#f0f9ff;border-radius:8px;border:2px solid #3b82f6;">
+  <h3 style="color:#1e40af;">🎯 我的推荐：混合方案 B</h3>
+  <p style="font-size:14px;">数据流程：</p>
+  <div style="background:white;padding:12px;border-radius:6px;font-size:12px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span>1️⃣</span> <span><strong>输入</strong>：PWA 上传记录 →</span>
+      <span style="background:#6366f1;color:white;padding:2px 8px;border-radius:12px;">SQLite 入库</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span>2️⃣</span> <span><strong>异步</strong>：后台任务 →</span>
+      <span style="background:#10b981;color:white;padding:2px 8px;border-radius:12px;">导出 .md 文件</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span>3️⃣</span> <span><strong>附件</strong>：存文件系统 →</span>
+      <span style="background:#f59e0b;color:white;padding:2px 8px;border-radius:12px;">DB 存 path 引用</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span>4️⃣</span> <span><strong>Obsidian</strong>：直接读取 →</span>
+      <span style="background:#8b5cf6;color:white;padding:2px 8px;border-radius:12px;">导出目录</span>
+    </div>
+  </div>
+  <p style="margin-top:8px;font-size:13px;color:#1e40af;"><strong>为什么好？</strong>修改笔记时只需更新DB（快），同时后台自动更新MD文件（Obsidian兼容），RAG 时可直接用 DB 中的 embeddings。</p>
+</div>
