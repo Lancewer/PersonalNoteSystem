@@ -73,6 +73,9 @@
 import { ref, computed, nextTick } from 'vue'
 import type { Note, Attachment } from '../types'
 import { formatRelativeTime } from '../utils/time'
+import { useSettingsStore } from '../stores/settings'
+
+const settingsStore = useSettingsStore()
 
 const props = defineProps<{
   note: Note
@@ -117,7 +120,7 @@ function getFileUrl(file: File): string {
 }
 
 function displayTime(dateStr: string): string {
-  return formatRelativeTime(dateStr)
+  return formatRelativeTime(dateStr, settingsStore.timezone)
 }
 
 async function startEdit() {
