@@ -1,33 +1,27 @@
 <template>
-  <div class="settings-page">
-    <h2 class="page-title">设置</h2>
-    <div class="settings-card">
-      <div class="setting-item">
-        <label class="setting-label">时区</label>
-        <select v-model="selectedTimezone" @change="handleTimezoneChange" class="timezone-select">
-          <option v-for="tz in timezones" :key="tz.value" :value="tz.value">
-            {{ tz.label }}
-          </option>
-        </select>
+  <AppLayout>
+    <div class="settings-container">
+      <h2 class="page-title">设置</h2>
+      <div class="settings-card">
+        <div class="setting-item">
+          <label class="setting-label">时区</label>
+          <select v-model="selectedTimezone" @change="handleTimezoneChange" class="timezone-select">
+            <option v-for="tz in timezones" :key="tz.value" :value="tz.value">
+              {{ tz.label }}
+            </option>
+          </select>
+        </div>
       </div>
+      <p class="version">v1.0.0</p>
     </div>
-    <div class="settings-card logout-card">
-      <button class="logout-btn" @click="handleLogout">退出登录</button>
-    </div>
-    <p class="version">v1.0.0</p>
-    <BottomNav />
-  </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
 import { useSettingsStore } from '../stores/settings'
-import BottomNav from '../components/BottomNav.vue'
+import AppLayout from '../components/AppLayout.vue'
 
-const router = useRouter()
-const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
 
 const selectedTimezone = ref(settingsStore.timezone)
@@ -47,22 +41,20 @@ const timezones = [
 function handleTimezoneChange() {
   settingsStore.setTimezone(selectedTimezone.value)
 }
-
-function handleLogout() {
-  authStore.doLogout()
-  router.push('/login')
-}
 </script>
 
 <style scoped>
-.settings-page {
-  padding: 20px 16px;
-  padding-bottom: 80px;
+.settings-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px;
 }
 
 .page-title {
-  font-size: 20px;
-  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-color);
 }
 
 .settings-card {
@@ -97,22 +89,6 @@ function handleLogout() {
 
 .timezone-select:focus {
   border-color: var(--primary-color);
-}
-
-.logout-card {
-  padding: 20px;
-}
-
-.logout-btn {
-  width: 100%;
-  padding: 14px;
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  min-height: 44px;
 }
 
 .version {
