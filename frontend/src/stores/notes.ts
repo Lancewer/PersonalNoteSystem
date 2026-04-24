@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Note, Tag } from '../types'
 import { getNotes, createNote as apiCreateNote, deleteNote as apiDeleteNote, uploadAttachment, updateNote as apiUpdateNote, deleteAttachment as apiDeleteAttachment } from '../api/notes'
+import { getNotesByTag } from '../api/tags'
 
 export const useNotesStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
@@ -20,7 +21,12 @@ export const useNotesStore = defineStore('notes', () => {
 
     loading.value = true
     try {
-      const response = await getNotes(skip)
+      let response
+      if (activeTag.value) {
+        response = await getNotesByTag(activeTag.value.id, skip)
+      } else {
+        response = await getNotes(skip)
+      }
       // Backend returns notes in descending order (newest first)
       // We display in ascending order (oldest first)
       const reversedNotes = [...response.notes].reverse()
