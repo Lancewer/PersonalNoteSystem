@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Note, Tag } from '../types'
+import type { Note } from '../types'
 import { getNotes, createNote as apiCreateNote, deleteNote as apiDeleteNote, uploadAttachment, updateNote as apiUpdateNote, deleteAttachment as apiDeleteAttachment } from '../api/notes'
 import { getNotesByTag } from '../api/tags'
 
@@ -8,7 +8,7 @@ export const useNotesStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
   const loading = ref(false)
   const hasMore = ref(true)
-  const activeTag = ref<Tag | null>(null)
+  const activeTagId = ref<string | null>(null)
   let skip = 0
 
   async function fetchNotes(reset = false) {
@@ -16,14 +16,15 @@ export const useNotesStore = defineStore('notes', () => {
     if (reset) {
       skip = 0
       notes.value = []
+      hasMore.value = true
     }
     if (!hasMore.value && !reset) return
 
     loading.value = true
     try {
       let response
-      if (activeTag.value) {
-        response = await getNotesByTag(activeTag.value.id, skip)
+      if (activeTagId.value) {
+        response = await getNotesByTag(activeTagId.value, skip)
       } else {
         response = await getNotes(skip)
       }
@@ -46,7 +47,6 @@ export const useNotesStore = defineStore('notes', () => {
 
   async function createNote(content: string) {
     const newNote = await apiCreateNote(content)
-    // Add new note to the end (newest position)
     notes.value.push(newNote)
   }
 
@@ -60,7 +60,6 @@ export const useNotesStore = defineStore('notes', () => {
         console.error('Attachment upload failed:', e)
       }
     }
-    // Add new note to the end (newest position)
     notes.value.push(newNote)
   }
 
@@ -105,9 +104,9 @@ export const useNotesStore = defineStore('notes', () => {
     notes.value = notes.value.filter(n => n.id !== id)
   }
 
-  function filterByTag(tag: Tag | null) {
-    activeTag.value = tag
+  function setFilterTag(tagId: string | null) {
+    activeTagId.value = tagId
   }
 
-  return { notes, loading, hasMore, activeTag, fetchNotes, createNote, createNoteWithAttachments, updateNote, removeAttachment, removeNote, filterByTag }
+  return { notes, loading, hasMore, activeTagId, fetchNotes, createNote, createNoteWithAttachments, updateNote, removeAttachment, removeNote, setFilterTag }
 })

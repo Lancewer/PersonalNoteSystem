@@ -193,24 +193,23 @@ describe('notes store', () => {
     })
   })
 
-  describe('filterByTag', () => {
-    it('should set active tag', () => {
+  describe('setFilterTag', () => {
+    it('should set active tag ID', () => {
       const store = useNotesStore()
-      const tag = { id: 'tag-1', name: '工作', parent_id: null }
-      store.filterByTag(tag)
-      expect(store.activeTag).toEqual(tag)
+      store.setFilterTag('tag-1')
+      expect(store.activeTagId).toBe('tag-1')
     })
 
     it('should clear active tag when passing null', () => {
       const store = useNotesStore()
-      store.filterByTag({ id: 'tag-1', name: '工作', parent_id: null })
-      store.filterByTag(null)
-      expect(store.activeTag).toBeNull()
+      store.setFilterTag('tag-1')
+      store.setFilterTag(null)
+      expect(store.activeTagId).toBeNull()
     })
   })
 
   describe('fetchNotes with tag filter', () => {
-    it('should call getNotesByTag when activeTag is set', async () => {
+    it('should call getNotesByTag when activeTagId is set', async () => {
       const store = useNotesStore()
       const mockResponse = {
         notes: [
@@ -221,14 +220,14 @@ describe('notes store', () => {
       vi.mocked(notesApi.getNotes).mockResolvedValue({ notes: [], has_more: false })
       vi.mocked(tagsApi.getNotesByTag).mockResolvedValue(mockResponse)
 
-      store.filterByTag({ id: 'tag-1', name: '工作', parent_id: null })
+      store.setFilterTag('tag-1')
       await store.fetchNotes(true)
 
       expect(tagsApi.getNotesByTag).toHaveBeenCalledWith('tag-1', 0)
       expect(notesApi.getNotes).not.toHaveBeenCalled()
     })
 
-    it('should call getNotes when activeTag is null', async () => {
+    it('should call getNotes when activeTagId is null', async () => {
       const store = useNotesStore()
       const mockResponse = {
         notes: [
@@ -238,7 +237,7 @@ describe('notes store', () => {
       }
       vi.mocked(notesApi.getNotes).mockResolvedValue(mockResponse)
 
-      store.filterByTag(null)
+      store.setFilterTag(null)
       await store.fetchNotes(true)
 
       expect(notesApi.getNotes).toHaveBeenCalledWith(0)

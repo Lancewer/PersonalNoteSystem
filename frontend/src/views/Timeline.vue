@@ -1,13 +1,13 @@
 <template>
   <AppLayout>
     <div class="timeline-container">
-      <div v-if="activeTag" class="filter-bar">
+      <div v-if="activeTagId" class="filter-bar">
         <span class="filter-label">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/>
             <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>
           </svg>
-          标签：#{{ activeTag.name }}
+          标签：#{{ activeTagName }}
         </span>
         <button class="filter-clear" @click="clearFilter">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -23,7 +23,7 @@
           <path d="M12 20h9"/>
           <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
         </svg>
-        <p v-if="activeTag">该标签下还没有笔记</p>
+        <p v-if="activeTagId">该标签下还没有笔记</p>
         <p v-else>还没有笔记，在下方开始记录你的想法</p>
       </div>
 
@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotesStore } from '../stores/notes'
 import { getTags } from '../api/tags'
@@ -62,49 +62,52 @@ const route = useRoute()
 const router = useRouter()
 const notesStore = useNotesStore()
 
-async function resolveTag(tagId: string): Promise<Tag | null> {
-  const allTags = await getTags()
-  return findTagById(allTags, tagId)
+const activeTagName = ref('')
+const allTags = ref<Tag[]>([])
+
+async function loadTags() {
+  allTags.value = await getTags()
 }
 
-function findTagById(tags: Tag[], tagId: string): Tag | null {
-  for (const tag of tags) {
-    if (tag.id === tagId) return tag
+function findTagName(tagId: string): string {
+  for (const tag of allTags.value) {
+    if (tag.id === tagId) return tag.name
     if (tag.children) {
-      const found = findTagById(tag.children, tagId)
+      const found = findTagNameInChildren(tag.children, tagId)
+      if (found) return found
+    }
+  }
+  return ''
+}
+
+function findTagNameInChildren(children: Tag[], tagId: string): string | null {
+  for (const tag of children) {
+    if (tag.id === tagId) return tag.name
+    if (tag.children) {
+      const found = findTagNameInChildren(tag.children, tagId)
       if (found) return found
     }
   }
   return null
 }
 
+const activeTagId = computed(() => notesStore.activeTagId)
+
 onMounted(async () => {
+  await loadTags()
   const tagId = route.query.tag as string
   if (tagId) {
-    const tag = await resolveTag(tagId)
-    if (tag) {
-      notesStore.filterByTag(tag)
-    }
-  }
-  notesStore.fetchNotes(true)
-})
-
-watch(() => route.query.tag, async (newTagId) => {
-  if (newTagId) {
-    const tag = await resolveTag(newTagId as string)
-    if (tag) {
-      notesStore.filterByTag(tag)
-    }
-  } else {
-    notesStore.filterByTag(null)
+    notesStore.setFilterTag(tagId)
+    activeTagName.value = findTagName(tagId)
   }
   notesStore.fetchNotes(true)
 })
 
 async function clearFilter() {
+  notesStore.setFilterTag(null)
+  activeTagName.value = ''
+  await notesStore.fetchNotes(true)
   router.replace({ path: '/', query: {} })
-  notesStore.filterByTag(null)
-  notesStore.fetchNotes(true)
 }
 
 async function handleCreate(content: string, files: File[]) {

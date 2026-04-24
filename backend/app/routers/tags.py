@@ -5,6 +5,7 @@ from ..database import get_db
 from ..dependencies import get_current_user
 from ..models.user import User
 from ..schemas.tag import TagCreate, TagTreeNode
+from ..schemas.note import NoteListResponse
 from ..services.tag_service import create_tag, get_tag_tree, get_notes_by_tag
 from ..services.note_service import PAGE_SIZE
 
@@ -28,7 +29,7 @@ def list_tags(
     return get_tag_tree(db, current_user.id)
 
 
-@router.get("/{tag_id}/notes")
+@router.get("/{tag_id}/notes", response_model=NoteListResponse)
 def get_tag_notes(
     tag_id: UUID,
     skip: int = 0,
@@ -39,4 +40,4 @@ def get_tag_notes(
     has_more = len(notes) > PAGE_SIZE
     if has_more:
         notes = notes[:-1]
-    return {"notes": notes, "has_more": has_more}
+    return NoteListResponse(notes=notes, has_more=has_more)
