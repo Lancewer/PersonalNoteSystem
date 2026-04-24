@@ -59,16 +59,6 @@ describe('NoteCard', () => {
     expect(wrapper.emitted('delete')![0]).toEqual(['note-1'])
   })
 
-  it('should emit view event when card clicked', async () => {
-    const wrapper = mount(NoteCard, {
-      props: { note: mockNote },
-    })
-    const card = wrapper.find('.note-card-body')
-    await card.trigger('click')
-    expect(wrapper.emitted('view')).toBeTruthy()
-    expect(wrapper.emitted('view')![0]).toEqual(['note-1'])
-  })
-
   it('should show tags when note has tags', () => {
     const noteWithTags = {
       ...mockNote,
@@ -100,5 +90,34 @@ describe('NoteCard', () => {
       props: { note: shortNote },
     })
     expect(wrapper.find('.note-content-truncated').exists()).toBe(false)
+  })
+
+  it('should toggle expanded state when clicking card body', async () => {
+    const longNote = {
+      ...mockNote,
+      content: '这是一条很长的测试笔记内容，超过显示限制的文字应该被截断显示。我们需要更多的文字来确保内容长度超过一百二十个字符的限制，这样才能正确触发截断逻辑。这是额外添加的测试文字内容，用来确保长度足够长。继续添加更多文字以确保超过限制。再添加一些内容来确保测试通过。',
+    }
+    const wrapper = mount(NoteCard, {
+      props: { note: longNote },
+    })
+    
+    // Initially truncated
+    expect(wrapper.find('.note-content-truncated').exists()).toBe(true)
+    expect(wrapper.find('.note-expand-hint').exists()).toBe(true)
+    
+    // Click to expand
+    const cardBody = wrapper.find('.note-card-body')
+    await cardBody.trigger('click')
+    
+    // Should be expanded now
+    expect(wrapper.find('.note-content-truncated').exists()).toBe(false)
+    expect(wrapper.find('.note-expand-hint').exists()).toBe(false)
+    
+    // Click again to collapse
+    await cardBody.trigger('click')
+    
+    // Should be truncated again
+    expect(wrapper.find('.note-content-truncated').exists()).toBe(true)
+    expect(wrapper.find('.note-expand-hint').exists()).toBe(true)
   })
 })

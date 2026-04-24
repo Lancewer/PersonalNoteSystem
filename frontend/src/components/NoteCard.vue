@@ -1,12 +1,12 @@
 <template>
-  <div class="note-card" @click="handleCardClick">
-    <!-- View Mode -->
-    <template v-if="!isEditing && !isViewing">
-      <div class="note-card-body">
-        <p :class="['note-content', { 'note-content-truncated': isTruncated }]">
-          {{ displayContent }}
+  <div class="note-card">
+    <!-- View/Edit Mode -->
+    <template v-if="!isEditing">
+      <div class="note-card-body" @click="toggleExpand">
+        <p :class="['note-content', { 'note-content-truncated': isTruncated && !isExpanded }]">
+          {{ note.content }}
         </p>
-        <p v-if="isTruncated" class="note-expand-hint">点击展开</p>
+        <p v-if="isTruncated && !isExpanded" class="note-expand-hint">点击展开</p>
       </div>
       <div v-if="note.tags.length" class="note-tags">
         <span v-for="tag in note.tags" :key="tag.id" class="note-tag">
@@ -40,55 +40,6 @@
             </svg>
           </button>
         </div>
-      </div>
-    </template>
-
-    <!-- View Full Mode -->
-    <template v-else-if="isViewing">
-      <div class="note-view-header">
-        <button class="note-back-btn" @click="closeView">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 12H5"/>
-            <path d="m12 19-7-7 7-7"/>
-          </svg>
-          返回
-        </button>
-        <span class="note-view-time">{{ displayTime(note.created_at) }}</span>
-      </div>
-      <div class="note-view-content">
-        <p class="note-view-text">{{ note.content }}</p>
-      </div>
-      <div v-if="note.tags.length" class="note-view-tags">
-        <span v-for="tag in note.tags" :key="tag.id" class="note-tag">
-          #{{ tag.name }}
-        </span>
-      </div>
-      <div v-if="imageAttachments.length" class="note-view-attachments">
-        <img
-          v-for="att in imageAttachments"
-          :key="att.id"
-          :src="getImageUrl(att.id)"
-          class="note-view-attachment-img"
-          loading="lazy"
-          @click="openImageModal(att.id)"
-        />
-      </div>
-      <div class="note-view-actions">
-        <button class="note-action-btn" @click="startEdit">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-            <path d="m15 5 4 4"/>
-          </svg>
-          编辑
-        </button>
-        <button class="note-action-btn note-action-btn--danger" @click="handleDelete">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"/>
-            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-          </svg>
-          删除
-        </button>
       </div>
     </template>
 
@@ -172,12 +123,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   delete: [id: string]
   update: [id: string, content: string, newFiles: File[], removedAttIds: string[]]
-  view: [id: string]
 }>()
 
 const token = localStorage.getItem('token')
 const isEditing = ref(false)
-const isViewing = ref(false)
+const isExpanded = ref(false)
 const editContent = ref('')
 const editTextarea = ref<HTMLTextAreaElement | null>(null)
 const editAttachments = ref<Attachment[]>([])
@@ -194,13 +144,6 @@ const imageAttachments = computed(() =>
 
 const isTruncated = computed(() => props.note.content.length > MAX_PREVIEW_CHARS)
 
-const displayContent = computed(() => {
-  if (isViewing.value) return props.note.content
-  return isTruncated.value
-    ? props.note.content.slice(0, MAX_PREVIEW_CHARS) + '...'
-    : props.note.content
-})
-
 function getImageUrl(attId: string): string {
   return `/api/attachments/${attId}?token=${token}`
 }
@@ -212,27 +155,15 @@ function getEditImageUrl(att: Attachment | File): string {
   return URL.createObjectURL(att as File)
 }
 
-function getFileUrl(file: File): string {
-  return URL.createObjectURL(file)
-}
-
 function displayTime(dateStr: string): string {
   return formatRelativeTime(dateStr, settingsStore.timezone)
 }
 
-function handleCardClick() {
+function toggleExpand() {
   if (isEditing.value) return
-  if (isTruncated.value && !isViewing.value) {
-    isViewing.value = true
-    emit('view', props.note.id)
-  } else if (!isViewing.value) {
-    isViewing.value = true
-    emit('view', props.note.id)
+  if (isTruncated.value) {
+    isExpanded.value = !isExpanded.value
   }
-}
-
-function closeView() {
-  isViewing.value = false
 }
 
 function handleDelete() {
@@ -240,7 +171,7 @@ function handleDelete() {
 }
 
 async function startEdit() {
-  isViewing.value = false
+  isExpanded.value = false
   editContent.value = props.note.content
   editAttachments.value = [...props.note.attachments]
   removedAttIds.value = []
@@ -306,7 +237,6 @@ function closeImageModal() {
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 12px;
-  cursor: pointer;
   transition: background-color 0.2s, box-shadow 0.2s;
 }
 
@@ -320,6 +250,7 @@ function closeImageModal() {
 
 .note-card-body {
   margin-bottom: 12px;
+  cursor: pointer;
 }
 
 .note-content {
@@ -329,6 +260,7 @@ function closeImageModal() {
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
+  transition: all 0.25s ease;
 }
 
 .note-content-truncated {
@@ -429,84 +361,6 @@ function closeImageModal() {
 .note-action-btn--danger:hover {
   background: rgba(231, 76, 60, 0.08);
   color: #e74c3c;
-}
-
-/* View Full Mode */
-.note-view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.note-back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  font-size: 14px;
-  cursor: pointer;
-  padding: 4px 0;
-}
-
-.note-view-time {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.note-view-content {
-  margin-bottom: 16px;
-}
-
-.note-view-text {
-  font-size: 16px;
-  line-height: 1.8;
-  color: var(--text-color);
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
-}
-
-.note-view-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.note-view-attachments {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.note-view-attachment-img {
-  max-width: 100%;
-  max-height: 400px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.note-view-attachment-img:hover {
-  opacity: 0.85;
-}
-
-.note-view-actions {
-  display: flex;
-  gap: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-color);
-}
-
-.note-view-actions .note-action-btn {
-  width: auto;
-  padding: 0 16px;
-  gap: 6px;
-  font-size: 14px;
 }
 
 /* Edit Mode */
