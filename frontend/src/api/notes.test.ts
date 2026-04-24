@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { uploadAttachment } from './notes'
+import { uploadAttachment, deleteAttachment } from './notes'
 import request from './request'
 
 vi.mock('./request', () => ({
   default: {
     post: vi.fn(),
+    delete: vi.fn(),
   },
 }))
 
@@ -42,6 +43,17 @@ describe('notes API', () => {
       vi.mocked(request.post).mockRejectedValue(new Error('Upload failed'))
 
       await expect(uploadAttachment(noteId, file)).rejects.toThrow('Upload failed')
+    })
+  })
+
+  describe('deleteAttachment', () => {
+    it('should DELETE to /api/attachments/{id}', async () => {
+      const attId = 'att-id'
+      vi.mocked(request.delete).mockResolvedValue({ data: undefined })
+
+      await deleteAttachment(attId)
+
+      expect(request.delete).toHaveBeenCalledWith(`/attachments/${attId}`)
     })
   })
 })

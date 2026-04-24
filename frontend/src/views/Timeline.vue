@@ -39,8 +39,8 @@ async function handleDelete(id: string) {
   }
 }
 
-async function handleUpdate(id: string, content: string) {
-  await notesStore.updateNote(id, content)
+async function handleUpdate(id: string, content: string, newFiles: File[], removedAttIds: string[]) {
+  await notesStore.updateNote(id, content, newFiles, removedAttIds)
 }
 </script>
 

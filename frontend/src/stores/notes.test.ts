@@ -9,6 +9,7 @@ vi.mock('../api/notes', () => ({
   deleteNote: vi.fn(),
   uploadAttachment: vi.fn(),
   updateNote: vi.fn(),
+  deleteAttachment: vi.fn(),
 }))
 
 describe('notes store', () => {
@@ -108,12 +109,65 @@ describe('notes store', () => {
       expect(store.notes[0].content).toBe('Updated content')
       expect(store.notes[0].tags).toHaveLength(1)
     })
+  })
+
+  describe('removeAttachment', () => {
+    it('should remove attachment from note and delete from server', async () => {
+      const store = useNotesStore()
+      const mockNote = {
+        id: 'note-1',
+        content: 'Hello',
+        created_at: '2026-04-24T12:00:00Z',
+        tags: [],
+        attachments: [
+          { id: 'att-1', file_type: 'image', file_path: 'path1.jpg', original_name: '1.jpg', file_size: 100 },
+          { id: 'att-2', file_type: 'image', file_path: 'path2.jpg', original_name: '2.jpg', file_size: 200 },
+        ],
+      }
+      store.notes.push(mockNote)
+
+      await store.removeAttachment('note-1', 'att-1')
+
+      expect(notesApi.deleteAttachment).toHaveBeenCalledWith('att-1')
+      expect(store.notes[0].attachments).toHaveLength(1)
+      expect(store.notes[0].attachments[0].id).toBe('att-2')
+    })
 
     it('should return false if note not found', async () => {
       const store = useNotesStore()
       const result = await store.updateNote('non-existent', 'content')
       expect(result).toBe(false)
       expect(notesApi.updateNote).not.toHaveBeenCalled()
+    })
+
+    it('should upload new files and remove deleted attachments', async () => {
+      const store = useNotesStore()
+      const originalNote = {
+        id: 'note-1',
+        content: 'Hello',
+        created_at: '2026-04-24T12:00:00Z',
+        tags: [],
+        attachments: [
+          { id: 'att-1', file_type: 'image', file_path: 'p1.jpg', original_name: '1.jpg', file_size: 100 },
+        ],
+      }
+      const updatedNote = {
+        ...originalNote,
+        content: 'Updated',
+      }
+      const newAttachment = { id: 'att-new', file_type: 'image', file_path: 'new.jpg', original_name: 'new.jpg', file_size: 200 }
+
+      store.notes.push(originalNote)
+      vi.mocked(notesApi.updateNote).mockResolvedValue(updatedNote)
+      vi.mocked(notesApi.uploadAttachment).mockResolvedValue(newAttachment)
+
+      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
+      await store.updateNote('note-1', 'Updated', [file], ['att-1'])
+
+      expect(notesApi.deleteAttachment).toHaveBeenCalledWith('att-1')
+      expect(notesApi.uploadAttachment).toHaveBeenCalledWith('note-1', file)
+      expect(store.notes[0].attachments).toHaveLength(1)
+      expect(store.notes[0].attachments[0].id).toBe('att-new')
     })
   })
 })

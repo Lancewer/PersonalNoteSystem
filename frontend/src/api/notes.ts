@@ -28,3 +28,7 @@ export const uploadAttachment = (noteId: string, file: File): Promise<{ id: stri
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then(res => res.data)
 }
+
+export const deleteAttachment = (attachmentId: string): Promise<void> => {
+  return request.delete(`/attachments/${attachmentId}`).then(() => undefined)
+}

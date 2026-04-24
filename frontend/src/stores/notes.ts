@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Note, Tag } from '../types'
-import { getNotes, createNote as apiCreateNote, deleteNote as apiDeleteNote, uploadAttachment, updateNote as apiUpdateNote } from '../api/notes'
+import { getNotes, createNote as apiCreateNote, deleteNote as apiDeleteNote, uploadAttachment, updateNote as apiUpdateNote, deleteAttachment as apiDeleteAttachment } from '../api/notes'
 
 export const useNotesStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
@@ -51,11 +51,39 @@ export const useNotesStore = defineStore('notes', () => {
     notes.value.unshift(newNote)
   }
 
-  async function updateNote(id: string, content: string): Promise<boolean> {
+  async function updateNote(id: string, content: string, newFiles: File[] = [], removedAttIds: string[] = []): Promise<boolean> {
     const index = notes.value.findIndex(n => n.id === id)
     if (index === -1) return false
+
     const updated = await apiUpdateNote(id, content)
+
+    for (const attId of removedAttIds) {
+      try {
+        await apiDeleteAttachment(attId)
+      } catch (e) {
+        console.error('Delete attachment failed:', e)
+      }
+    }
+    updated.attachments = updated.attachments.filter(a => !removedAttIds.includes(a.id))
+
+    for (const file of newFiles) {
+      try {
+        const attachment = await uploadAttachment(id, file)
+        updated.attachments.push(attachment)
+      } catch (e) {
+        console.error('Upload attachment failed:', e)
+      }
+    }
+
     notes.value[index] = updated
+    return true
+  }
+
+  async function removeAttachment(noteId: string, attachmentId: string): Promise<boolean> {
+    const note = notes.value.find(n => n.id === noteId)
+    if (!note) return false
+    await apiDeleteAttachment(attachmentId)
+    note.attachments = note.attachments.filter(a => a.id !== attachmentId)
     return true
   }
 
@@ -68,5 +96,5 @@ export const useNotesStore = defineStore('notes', () => {
     activeTag.value = tag
   }
 
-  return { notes, loading, hasMore, activeTag, fetchNotes, createNote, createNoteWithAttachments, updateNote, removeNote, filterByTag }
+  return { notes, loading, hasMore, activeTag, fetchNotes, createNote, createNoteWithAttachments, updateNote, removeAttachment, removeNote, filterByTag }
 })
