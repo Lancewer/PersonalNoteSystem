@@ -11,6 +11,9 @@ class AttachmentResponse(BaseModel):
     original_name: str
     file_size: int
 
+    class Config:
+        from_attributes = True
+
 
 class TagResponse(BaseModel):
     id: UUID
