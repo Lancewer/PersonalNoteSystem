@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { Note } from '../types'
 import { getNotes, createNote as apiCreateNote, deleteNote as apiDeleteNote, uploadAttachment, updateNote as apiUpdateNote, deleteAttachment as apiDeleteAttachment } from '../api/notes'
 import { getNotesByTag } from '../api/tags'
@@ -9,7 +9,18 @@ export const useNotesStore = defineStore('notes', () => {
   const loading = ref(false)
   const hasMore = ref(true)
   const activeTagId = ref<string | null>(null)
+  const searchQuery = ref('')
   let skip = 0
+
+  const filteredNotes = computed(() => {
+    if (!searchQuery.value.trim()) {
+      return notes.value
+    }
+    const query = searchQuery.value.toLowerCase()
+    return notes.value.filter(note =>
+      note.content.toLowerCase().includes(query)
+    )
+  })
 
   async function fetchNotes(reset = false) {
     if (loading.value) return
@@ -108,5 +119,9 @@ export const useNotesStore = defineStore('notes', () => {
     activeTagId.value = tagId
   }
 
-  return { notes, loading, hasMore, activeTagId, fetchNotes, createNote, createNoteWithAttachments, updateNote, removeAttachment, removeNote, setFilterTag }
+  function clearSearch() {
+    searchQuery.value = ''
+  }
+
+  return { notes, loading, hasMore, activeTagId, searchQuery, filteredNotes, fetchNotes, createNote, createNoteWithAttachments, updateNote, removeAttachment, removeNote, setFilterTag, clearSearch }
 })
