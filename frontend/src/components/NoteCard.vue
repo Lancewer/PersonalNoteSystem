@@ -1,10 +1,16 @@
 <template>
-  <div class="note-card">
-    <template v-if="!isEditing">
-      <p class="note-content" v-html="renderedContent"></p>
+  <div class="note-card" @click="handleCardClick">
+    <!-- View Mode -->
+    <template v-if="!isEditing && !isViewing">
+      <div class="note-card-body">
+        <p :class="['note-content', { 'note-content-truncated': isTruncated }]">
+          {{ displayContent }}
+        </p>
+        <p v-if="isTruncated" class="note-expand-hint">点击展开</p>
+      </div>
       <div v-if="note.tags.length" class="note-tags">
-        <span v-for="tag in note.tags" :key="tag.id" class="tag">
-          {{ tag.name }}
+        <span v-for="tag in note.tags" :key="tag.id" class="note-tag">
+          #{{ tag.name }}
         </span>
       </div>
       <div v-if="imageAttachments.length" class="note-attachments">
@@ -12,57 +18,139 @@
           v-for="att in imageAttachments"
           :key="att.id"
           :src="getImageUrl(att.id)"
-          class="attachment-thumb"
+          class="note-attachment-thumb"
           loading="lazy"
-          @click="openImageModal(att.id)"
+          @click.stop="openImageModal(att.id)"
         />
       </div>
       <div class="note-footer">
         <span class="note-time">{{ displayTime(note.created_at) }}</span>
         <div class="note-actions">
-          <button class="edit-btn" @click="startEdit">编辑</button>
-          <button class="delete-btn" @click="$emit('delete', note.id)">删除</button>
+          <button class="note-action-btn" @click.stop="startEdit" title="编辑">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+              <path d="m15 5 4 4"/>
+            </svg>
+          </button>
+          <button class="note-action-btn note-action-btn--danger" @click.stop="handleDelete" title="删除">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            </svg>
+          </button>
         </div>
       </div>
     </template>
+
+    <!-- View Full Mode -->
+    <template v-else-if="isViewing">
+      <div class="note-view-header">
+        <button class="note-back-btn" @click="closeView">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/>
+            <path d="m12 19-7-7 7-7"/>
+          </svg>
+          返回
+        </button>
+        <span class="note-view-time">{{ displayTime(note.created_at) }}</span>
+      </div>
+      <div class="note-view-content">
+        <p class="note-view-text">{{ note.content }}</p>
+      </div>
+      <div v-if="note.tags.length" class="note-view-tags">
+        <span v-for="tag in note.tags" :key="tag.id" class="note-tag">
+          #{{ tag.name }}
+        </span>
+      </div>
+      <div v-if="imageAttachments.length" class="note-view-attachments">
+        <img
+          v-for="att in imageAttachments"
+          :key="att.id"
+          :src="getImageUrl(att.id)"
+          class="note-view-attachment-img"
+          loading="lazy"
+          @click="openImageModal(att.id)"
+        />
+      </div>
+      <div class="note-view-actions">
+        <button class="note-action-btn" @click="startEdit">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+            <path d="m15 5 4 4"/>
+          </svg>
+          编辑
+        </button>
+        <button class="note-action-btn note-action-btn--danger" @click="handleDelete">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"/>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+          </svg>
+          删除
+        </button>
+      </div>
+    </template>
+
+    <!-- Edit Mode -->
     <template v-else>
       <textarea
         v-model="editContent"
-        class="edit-textarea"
+        class="note-edit-textarea"
         rows="8"
         ref="editTextarea"
+        @click.stop
       ></textarea>
-      <div v-if="editAttachments.length" class="edit-image-grid">
-        <div v-for="(att, index) in editAttachments" :key="att.id || index" class="edit-image-item">
-          <img :src="getEditImageUrl(att)" class="edit-thumb" />
-          <button class="remove-img-btn" @click="removeEditImage(index)">×</button>
+      <div v-if="editAttachments.length" class="note-edit-images">
+        <div v-for="(att, index) in editAttachments" :key="att.id || index" class="note-edit-image-item">
+          <img :src="getEditImageUrl(att)" class="note-edit-image-thumb" />
+          <button class="note-edit-remove-btn" @click="removeEditImage(index)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"/>
+              <path d="m6 6 12 12"/>
+            </svg>
+          </button>
         </div>
       </div>
-      <div v-if="pendingFiles.length" class="pending-files">
-        <span class="pending-label">待上传图片：</span>
-        <div v-for="(file, index) in pendingFiles" :key="index" class="pending-item">
-          <img v-if="file.type.startsWith('image/')" :src="getFileUrl(file)" class="pending-thumb" />
-          <span class="pending-name">{{ file.name }}</span>
-          <button class="remove-pending" @click="removePendingFile(index)">×</button>
+      <div v-if="pendingFiles.length" class="note-edit-pending">
+        <span class="note-edit-pending-label">待上传：</span>
+        <div v-for="(file, index) in pendingFiles" :key="index" class="note-edit-pending-item">
+          <span class="note-edit-pending-name">{{ file.name }}</span>
+          <button class="note-edit-pending-remove" @click="removePendingFile(index)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"/>
+              <path d="m6 6 12 12"/>
+            </svg>
+          </button>
         </div>
       </div>
-      <div class="edit-actions">
-        <label class="add-image-btn" title="添加图片">
-          📷 添加图片
+      <div class="note-edit-footer">
+        <label class="note-edit-upload" title="添加图片">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+            <circle cx="9" cy="9" r="2"/>
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+          </svg>
           <input type="file" accept="image/*" multiple @change="handleImageUpload" hidden />
         </label>
-        <div class="action-buttons">
-          <button class="cancel-btn" @click="cancelEdit">取消</button>
-          <button class="save-btn" @click="saveEdit">保存</button>
+        <div class="note-edit-actions">
+          <button class="note-edit-cancel" @click="cancelEdit">取消</button>
+          <button class="note-edit-save" :disabled="!editContent.trim()" @click="saveEdit">保存</button>
         </div>
       </div>
     </template>
+
     <!-- Image Modal -->
     <Teleport to="body">
-      <div v-if="showImageModal" class="image-modal-overlay" @click="closeImageModal">
-        <div class="image-modal-content" @click.stop>
-          <img :src="getImageUrl(currentViewImage)" class="image-modal-full" />
-          <button class="image-modal-close" @click="closeImageModal">×</button>
+      <div v-if="showImageModal" class="note-image-modal" @click="closeImageModal">
+        <div class="note-image-modal-content" @click.stop>
+          <img :src="getImageUrl(currentViewImage)" class="note-image-modal-full" />
+          <button class="note-image-modal-close" @click="closeImageModal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"/>
+              <path d="m6 6 12 12"/>
+            </svg>
+          </button>
         </div>
       </div>
     </Teleport>
@@ -84,10 +172,12 @@ const props = defineProps<{
 const emit = defineEmits<{
   delete: [id: string]
   update: [id: string, content: string, newFiles: File[], removedAttIds: string[]]
+  view: [id: string]
 }>()
 
 const token = localStorage.getItem('token')
 const isEditing = ref(false)
+const isViewing = ref(false)
 const editContent = ref('')
 const editTextarea = ref<HTMLTextAreaElement | null>(null)
 const editAttachments = ref<Attachment[]>([])
@@ -96,16 +186,23 @@ const pendingFiles = ref<File[]>([])
 const showImageModal = ref(false)
 const currentViewImage = ref('')
 
+const MAX_PREVIEW_CHARS = 120
+
 const imageAttachments = computed(() =>
   props.note.attachments.filter(a => a.file_type === 'image')
 )
 
+const isTruncated = computed(() => props.note.content.length > MAX_PREVIEW_CHARS)
+
+const displayContent = computed(() => {
+  if (isViewing.value) return props.note.content
+  return isTruncated.value
+    ? props.note.content.slice(0, MAX_PREVIEW_CHARS) + '...'
+    : props.note.content
+})
+
 function getImageUrl(attId: string): string {
   return `/api/attachments/${attId}?token=${token}`
-}
-
-function renderContent(content: string): string {
-  return content.replace(/#([\w\u4e00-\u9fff/]+)/g, '<span class="tag-inline">#$1</span>')
 }
 
 function getEditImageUrl(att: Attachment | File): string {
@@ -123,7 +220,27 @@ function displayTime(dateStr: string): string {
   return formatRelativeTime(dateStr, settingsStore.timezone)
 }
 
+function handleCardClick() {
+  if (isEditing.value) return
+  if (isTruncated.value && !isViewing.value) {
+    isViewing.value = true
+    emit('view', props.note.id)
+  } else if (!isViewing.value) {
+    isViewing.value = true
+    emit('view', props.note.id)
+  }
+}
+
+function closeView() {
+  isViewing.value = false
+}
+
+function handleDelete() {
+  emit('delete', props.note.id)
+}
+
 async function startEdit() {
+  isViewing.value = false
   editContent.value = props.note.content
   editAttachments.value = [...props.note.attachments]
   removedAttIds.value = []
@@ -181,121 +298,95 @@ function closeImageModal() {
   currentViewImage.value = ''
   document.body.style.overflow = ''
 }
-
-const renderedContent = computed(() => renderContent(props.note.content))
 </script>
 
 <style scoped>
 .note-card {
   background: var(--card-bg);
-  border-radius: 10px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 20px;
   margin-bottom: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.note-card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.note-card:active {
+  transform: scale(0.995);
+}
+
+.note-card-body {
+  margin-bottom: 12px;
 }
 
 .note-content {
   font-size: 15px;
   line-height: 1.7;
-  margin-bottom: 10px;
+  color: var(--text-color);
   white-space: pre-wrap;
   word-break: break-word;
+  margin: 0;
+}
+
+.note-content-truncated {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.note-expand-hint {
+  font-size: 12px;
+  color: var(--primary-color);
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 
 .note-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
-.tag, .tag-inline {
-  color: var(--primary-color);
+.note-tag {
   font-size: 13px;
+  color: var(--primary-color);
+  background: rgba(74, 144, 217, 0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .note-attachments {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 12px;
 }
 
-.attachment-thumb {
-  width: 120px;
-  height: 120px;
+.note-attachment-thumb {
+  width: 100px;
+  height: 100px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: transform 0.2s, opacity 0.2s;
 }
 
-.attachment-thumb:hover {
-  transform: scale(1.05);
-  opacity: 0.9;
-}
-
-/* Image Modal */
-.image-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.image-modal-content {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-}
-
-.image-modal-full {
-  max-width: 100%;
-  max-height: 90vh;
-  object-fit: contain;
-  border-radius: 8px;
-}
-
-.image-modal-close {
-  position: absolute;
-  top: -40px;
-  right: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.image-modal-close:hover {
-  background: rgba(255, 255, 255, 0.3);
+.note-attachment-thumb:hover {
+  transform: scale(1.03);
+  opacity: 0.85;
 }
 
 .note-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-color);
-}
-
-.note-actions {
-  display: flex;
-  gap: 8px;
 }
 
 .note-time {
@@ -303,67 +394,159 @@ const renderedContent = computed(() => renderContent(props.note.content))
   color: var(--text-secondary);
 }
 
-.edit-btn, .delete-btn, .cancel-btn, .save-btn {
-  background: none;
+.note-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.note-action-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
-  font-size: 13px;
+  background: transparent;
+  border-radius: 8px;
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: 4px 8px;
+  transition: background-color 0.15s, color 0.15s;
 }
 
-.edit-btn {
-  color: var(--primary-color);
+.note-action-btn:hover {
+  background: var(--bg-color);
+  color: var(--text-color);
 }
 
-.delete-btn {
-  color: #e74c3c;
+.note-action-btn:active {
+  transform: scale(0.92);
 }
 
-.cancel-btn {
+.note-action-btn--danger {
   color: var(--text-secondary);
 }
 
-.save-btn {
-  color: var(--primary-color);
-  font-weight: 500;
+.note-action-btn--danger:hover {
+  background: rgba(231, 76, 60, 0.08);
+  color: #e74c3c;
 }
 
-.edit-textarea {
+/* View Full Mode */
+.note-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.note-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.note-view-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.note-view-content {
+  margin-bottom: 16px;
+}
+
+.note-view-text {
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--text-color);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.note-view-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.note-view-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.note-view-attachment-img {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.note-view-attachment-img:hover {
+  opacity: 0.85;
+}
+
+.note-view-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.note-view-actions .note-action-btn {
+  width: auto;
+  padding: 0 16px;
+  gap: 6px;
+  font-size: 14px;
+}
+
+/* Edit Mode */
+.note-edit-textarea {
   width: 100%;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px;
+  border-radius: 10px;
+  padding: 12px;
   font-size: 15px;
   line-height: 1.6;
   font-family: inherit;
   resize: vertical;
   outline: none;
+  background: var(--bg-color);
 }
 
-.edit-textarea:focus {
+.note-edit-textarea:focus {
   border-color: var(--primary-color);
 }
 
-.edit-image-grid {
+.note-edit-images {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
-.edit-image-item {
+.note-edit-image-item {
   position: relative;
   display: inline-block;
 }
 
-.edit-thumb {
-  width: 80px;
-  height: 80px;
+.note-edit-image-thumb {
+  width: 72px;
+  height: 72px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
-.remove-img-btn {
+.note-edit-remove-btn {
   position: absolute;
   top: -6px;
   right: -6px;
@@ -373,81 +556,163 @@ const renderedContent = computed(() => renderContent(props.note.content))
   background: #e74c3c;
   color: white;
   border: none;
-  font-size: 14px;
-  line-height: 1;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
 }
 
-.pending-files {
-  margin-top: 10px;
-  padding: 8px;
+.note-edit-pending {
+  margin-top: 12px;
+  padding: 10px 12px;
   background: var(--bg-color);
   border-radius: 8px;
 }
 
-.pending-label {
+.note-edit-pending-label {
   font-size: 12px;
   color: var(--text-secondary);
   display: block;
   margin-bottom: 6px;
 }
 
-.pending-item {
+.note-edit-pending-item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin-right: 8px;
   margin-bottom: 4px;
+  padding: 4px 8px;
+  background: var(--card-bg);
+  border-radius: 6px;
 }
 
-.pending-thumb {
-  width: 40px;
-  height: 40px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.pending-name {
-  font-size: 11px;
-  color: var(--text-secondary);
-  max-width: 80px;
+.note-edit-pending-name {
+  font-size: 12px;
+  color: var(--text-color);
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.remove-pending {
+.note-edit-pending-remove {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #e74c3c;
-  color: white;
+  background: transparent;
+  color: var(--text-secondary);
   border: none;
-  font-size: 12px;
-  line-height: 1;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
 }
 
-.edit-actions {
+.note-edit-pending-remove:hover {
+  color: #e74c3c;
+}
+
+.note-edit-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-color);
 }
 
-.add-image-btn {
-  font-size: 13px;
+.note-edit-upload {
+  display: flex;
+  align-items: center;
   color: var(--primary-color);
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background-color 0.15s;
 }
 
-.action-buttons {
+.note-edit-upload:hover {
+  background: rgba(74, 144, 217, 0.08);
+}
+
+.note-edit-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+}
+
+.note-edit-cancel,
+.note-edit-save {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.note-edit-cancel {
+  background: var(--bg-color);
+  color: var(--text-secondary);
+}
+
+.note-edit-save {
+  background: var(--primary-color);
+  color: white;
+}
+
+.note-edit-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Image Modal */
+.note-image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.note-image-modal-content {
+  position: relative;
+  max-width: 95vw;
+  max-height: 95vh;
+}
+
+.note-image-modal-full {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.note-image-modal-close {
+  position: absolute;
+  top: -48px;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-image-modal-close:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 </style>
