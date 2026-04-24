@@ -21,10 +21,15 @@ export const useNotesStore = defineStore('notes', () => {
     loading.value = true
     try {
       const response = await getNotes(skip)
+      // Backend returns notes in descending order (newest first)
+      // We display in ascending order (oldest first)
+      const reversedNotes = [...response.notes].reverse()
+      
       if (reset) {
-        notes.value = response.notes
+        notes.value = reversedNotes
       } else {
-        notes.value.push(...response.notes)
+        // Prepend older notes to the beginning
+        notes.value.unshift(...reversedNotes)
       }
       hasMore.value = response.has_more
       skip += response.notes.length
@@ -35,7 +40,8 @@ export const useNotesStore = defineStore('notes', () => {
 
   async function createNote(content: string) {
     const newNote = await apiCreateNote(content)
-    notes.value.unshift(newNote)
+    // Add new note to the end (newest position)
+    notes.value.push(newNote)
   }
 
   async function createNoteWithAttachments(content: string, files: File[]) {
@@ -48,7 +54,8 @@ export const useNotesStore = defineStore('notes', () => {
         console.error('Attachment upload failed:', e)
       }
     }
-    notes.value.unshift(newNote)
+    // Add new note to the end (newest position)
+    notes.value.push(newNote)
   }
 
   async function updateNote(id: string, content: string, newFiles: File[] = [], removedAttIds: string[] = []): Promise<boolean> {

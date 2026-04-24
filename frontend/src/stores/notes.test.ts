@@ -170,4 +170,43 @@ describe('notes store', () => {
       expect(store.notes[0].attachments[0].id).toBe('att-new')
     })
   })
+
+  describe('fetchNotes ordering', () => {
+    it('should display notes in ascending order (oldest first)', async () => {
+      const store = useNotesStore()
+      const mockResponse = {
+        notes: [
+          { id: 'note-new', content: 'New', created_at: '2026-04-24T12:00:00Z', tags: [], attachments: [] },
+          { id: 'note-old', content: 'Old', created_at: '2026-04-23T12:00:00Z', tags: [], attachments: [] },
+        ],
+        has_more: false,
+      }
+      vi.mocked(notesApi.getNotes).mockResolvedValue(mockResponse)
+
+      await store.fetchNotes(true)
+
+      // Should be reversed: oldest first
+      expect(store.notes[0].id).toBe('note-old')
+      expect(store.notes[1].id).toBe('note-new')
+    })
+
+    it('should add new note to the end (newest position)', async () => {
+      const store = useNotesStore()
+      store.notes = [
+        { id: 'note-old', content: 'Old', created_at: '2026-04-23T12:00:00Z', tags: [], attachments: [] },
+      ]
+      const newNote = {
+        id: 'note-new',
+        content: 'New',
+        created_at: '2026-04-24T12:00:00Z',
+        tags: [],
+        attachments: [],
+      }
+      vi.mocked(notesApi.createNote).mockResolvedValue(newNote)
+
+      await store.createNote('New content')
+
+      expect(store.notes[store.notes.length - 1].id).toBe('note-new')
+    })
+  })
 })
