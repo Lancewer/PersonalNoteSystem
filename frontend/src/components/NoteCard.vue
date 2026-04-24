@@ -12,8 +12,9 @@
           v-for="att in imageAttachments"
           :key="att.id"
           :src="getImageUrl(att.id)"
-          class="attachment-image"
+          class="attachment-thumb"
           loading="lazy"
+          @click="openImageModal(att.id)"
         />
       </div>
       <div class="note-footer">
@@ -56,6 +57,15 @@
         </div>
       </div>
     </template>
+    <!-- Image Modal -->
+    <Teleport to="body">
+      <div v-if="showImageModal" class="image-modal-overlay" @click="closeImageModal">
+        <div class="image-modal-content" @click.stop>
+          <img :src="getImageUrl(currentViewImage)" class="image-modal-full" />
+          <button class="image-modal-close" @click="closeImageModal">×</button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -79,6 +89,8 @@ const editTextarea = ref<HTMLTextAreaElement | null>(null)
 const editAttachments = ref<Attachment[]>([])
 const removedAttIds = ref<string[]>([])
 const pendingFiles = ref<File[]>([])
+const showImageModal = ref(false)
+const currentViewImage = ref('')
 
 const imageAttachments = computed(() =>
   props.note.attachments.filter(a => a.file_type === 'image')
@@ -165,6 +177,18 @@ function saveEdit() {
   pendingFiles.value = []
 }
 
+function openImageModal(attId: string) {
+  currentViewImage.value = attId
+  showImageModal.value = true
+  document.body.style.overflow = 'hidden'
+}
+
+function closeImageModal() {
+  showImageModal.value = false
+  currentViewImage.value = ''
+  document.body.style.overflow = ''
+}
+
 const renderedContent = computed(() => renderContent(props.note.content))
 </script>
 
@@ -199,13 +223,72 @@ const renderedContent = computed(() => renderContent(props.note.content))
 
 .note-attachments {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.attachment-image {
-  max-width: 100%;
+.attachment-thumb {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
   border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.attachment-thumb:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+/* Image Modal */
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.image-modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.image-modal-full {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.image-modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .note-footer {
