@@ -1,5 +1,5 @@
 <template>
-  <AppLayout>
+  <AppLayout @search-open="showSearch = true">
     <div class="timeline-container">
       <div v-if="activeTagId" class="filter-bar">
         <span class="filter-label">
@@ -18,17 +18,18 @@
         </button>
       </div>
 
-      <div v-if="notesStore.notes.length === 0 && !notesStore.loading" class="empty-state">
+      <div v-if="notesStore.filteredNotes.length === 0 && !notesStore.loading" class="empty-state">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 20h9"/>
           <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
         </svg>
         <p v-if="activeTagId">该标签下还没有笔记</p>
+        <p v-else-if="notesStore.searchQuery">没有找到匹配的笔记</p>
         <p v-else>还没有笔记，在下方开始记录你的想法</p>
       </div>
 
       <NoteCard
-        v-for="note in notesStore.notes"
+        v-for="note in notesStore.filteredNotes"
         :key="note.id"
         :note="note"
         @delete="handleDelete"
@@ -45,6 +46,13 @@
         <NoteEditor @submit="handleCreate" />
       </div>
     </div>
+
+    <!-- Mobile Search Page -->
+    <SearchPage
+      v-model="showSearch"
+      @note-delete="handleDelete"
+      @note-update="handleUpdate"
+    />
   </AppLayout>
 </template>
 
@@ -57,6 +65,7 @@ import type { Tag } from '../types'
 import NoteCard from '../components/NoteCard.vue'
 import NoteEditor from '../components/NoteEditor.vue'
 import AppLayout from '../components/AppLayout.vue'
+import SearchPage from '../components/SearchPage.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -64,31 +73,22 @@ const notesStore = useNotesStore()
 
 const activeTagName = ref('')
 const allTags = ref<Tag[]>([])
+const showSearch = ref(false)
 
 async function loadTags() {
   allTags.value = await getTags()
 }
 
-function findTagName(tagId: string): string {
-  for (const tag of allTags.value) {
+function findTagName(tagId: string, tags?: Tag[]): string {
+  const tagList = tags || allTags.value
+  for (const tag of tagList) {
     if (tag.id === tagId) return tag.name
     if (tag.children) {
-      const found = findTagNameInChildren(tag.children, tagId)
+      const found = findTagName(tagId, tag.children)
       if (found) return found
     }
   }
   return ''
-}
-
-function findTagNameInChildren(children: Tag[], tagId: string): string | null {
-  for (const tag of children) {
-    if (tag.id === tagId) return tag.name
-    if (tag.children) {
-      const found = findTagNameInChildren(tag.children, tagId)
-      if (found) return found
-    }
-  }
-  return null
 }
 
 const activeTagId = computed(() => notesStore.activeTagId)
@@ -126,11 +126,26 @@ async function handleUpdate(id: string, content: string, newFiles: File[], remov
 </script>
 
 <style scoped>
+/* 
+  z-index hierarchy:
+  10  - desktop-sidebar (AppLayout)
+  100 - mobile-top-nav (AppLayout)
+  140 - drawer-overlay (AppLayout)
+  150 - sidebar-drawer (AppLayout)
+  200 - search-page (SearchPage)
+*/
+
 .timeline-container {
   max-width: 720px;
   margin: 0 auto;
   padding: 32px 24px;
   padding-bottom: 48px;
+}
+
+@media (max-width: 768px) {
+  .timeline-container {
+    padding: 16px;
+  }
 }
 
 .filter-bar {

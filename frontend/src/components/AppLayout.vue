@@ -1,36 +1,53 @@
 <template>
   <div class="app-layout">
-    <aside class="app-sidebar">
+    <!-- Mobile Top Navigation -->
+    <MobileTopNav
+      @menu-toggle="drawerOpen = true"
+      @search-open="$emit('search-open')"
+    />
+
+    <!-- Mobile Drawer Overlay -->
+    <div
+      v-if="drawerOpen"
+      class="drawer-overlay"
+      @click="drawerOpen = false"
+    ></div>
+
+    <!-- Mobile Sidebar Drawer -->
+    <aside class="sidebar-drawer" :class="{ 'drawer-open': drawerOpen }" aria-label="侧边栏导航">
       <div class="sidebar-header">
         <h1 class="sidebar-title">笔记</h1>
       </div>
-      <nav class="sidebar-nav">
-        <router-link to="/" class="nav-link" active-class="active">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-          <span>全部笔记</span>
-        </router-link>
-        <router-link to="/tags" class="nav-link" active-class="active">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/>
-            <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>
-          </svg>
-          <span>标签</span>
-        </router-link>
-        <router-link to="/settings" class="nav-link" active-class="active">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-          <span>设置</span>
-        </router-link>
-      </nav>
+      <SidebarNav @nav-click="drawerOpen = false" />
       <div class="sidebar-footer">
         <button class="logout-btn" @click="handleLogout">退出登录</button>
       </div>
     </aside>
+
+    <!-- Desktop Sidebar (hidden on mobile) -->
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <h1 class="sidebar-title">笔记</h1>
+      </div>
+      <div class="sidebar-search">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          class="sidebar-search-input"
+          type="text"
+          placeholder="搜索笔记..."
+          :value="notesStore.searchQuery"
+          @input="handleSearchInput"
+        />
+      </div>
+      <SidebarNav />
+      <div class="sidebar-footer">
+        <button class="logout-btn" @click="handleLogout">退出登录</button>
+      </div>
+    </aside>
+
     <main class="app-main">
       <slot />
     </main>
@@ -38,38 +55,137 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useNotesStore } from '../stores/notes'
+import MobileTopNav from './MobileTopNav.vue'
+import SidebarNav from './SidebarNav.vue'
+
+defineEmits<{
+  'search-open': []
+}>()
 
 const router = useRouter()
 const authStore = useAuthStore()
+const notesStore = useNotesStore()
+const drawerOpen = ref(false)
 
 function handleLogout() {
   authStore.doLogout()
   router.push('/login')
 }
+
+function handleSearchInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  notesStore.searchQuery = target.value
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && drawerOpen.value) {
+    drawerOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('keydown', handleKeydown))
+onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 </script>
 
 <style scoped>
+/* 
+  z-index hierarchy:
+  10  - desktop-sidebar
+  100 - mobile-top-nav
+  140 - drawer-overlay
+  150 - sidebar-drawer
+  200 - search-page (SearchPage.vue)
+*/
+
 .app-layout {
   display: flex;
   min-height: 100vh;
   background: var(--bg-color);
 }
 
-.app-sidebar {
-  width: 240px;
-  background: var(--card-bg);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
+/* Desktop Sidebar - only visible on desktop */
+.desktop-sidebar {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .desktop-sidebar {
+    display: flex;
+    width: 240px;
+    background: var(--card-bg);
+    border-right: 1px solid var(--border-color);
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 10;
+  }
+  
+  .app-main {
+    margin-left: 240px;
+  }
+}
+
+/* Mobile Drawer */
+.sidebar-drawer {
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
-  z-index: 10;
+  width: 280px;
+  background: var(--card-bg);
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
 }
 
+.sidebar-drawer.drawer-open {
+  transform: translateX(0);
+}
+
+@media (min-width: 769px) {
+  .sidebar-drawer {
+    display: none;
+  }
+}
+
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 140;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@media (min-width: 769px) {
+  .drawer-overlay {
+    display: none;
+  }
+}
+
+/* Mobile Top Nav spacing */
+@media (max-width: 768px) {
+  .app-main {
+    padding-top: 56px;
+  }
+}
+
+/* Shared sidebar styles */
 .sidebar-header {
   padding: 24px 20px;
   border-bottom: 1px solid var(--border-color);
@@ -82,32 +198,40 @@ function handleLogout() {
   margin: 0;
 }
 
-.sidebar-nav {
-  flex: 1;
-  padding: 12px 8px;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.sidebar-search {
+  position: relative;
   padding: 12px 16px;
-  border-radius: 10px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 15px;
-  transition: background-color 0.15s, color 0.15s;
-  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.nav-link:hover {
+.search-icon {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.sidebar-search-input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   background: var(--bg-color);
   color: var(--text-color);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.nav-link.active {
-  background: rgba(74, 144, 217, 0.1);
-  color: var(--primary-color);
+.sidebar-search-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.1);
+}
+
+.sidebar-search-input::placeholder {
+  color: var(--text-secondary);
 }
 
 .sidebar-footer {
@@ -131,60 +255,5 @@ function handleLogout() {
   background: rgba(231, 76, 60, 0.08);
   border-color: rgba(231, 76, 60, 0.2);
   color: #e74c3c;
-}
-
-.app-main {
-  flex: 1;
-  margin-left: 240px;
-  min-height: 100vh;
-}
-
-@media (max-width: 768px) {
-  .app-sidebar {
-    width: 64px;
-  }
-
-  .sidebar-header {
-    padding: 20px 12px;
-  }
-
-  .sidebar-title {
-    display: none;
-  }
-
-  .nav-link span {
-    display: none;
-  }
-
-  .nav-link {
-    justify-content: center;
-    padding: 12px;
-  }
-
-  .sidebar-footer {
-    padding: 12px;
-  }
-
-  .logout-btn {
-    font-size: 0;
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .logout-btn::before {
-    content: '';
-    display: block;
-    width: 20px;
-    height: 20px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'/%3E%3Cpolyline points='16 17 21 12 16 7'/%3E%3Cline x1='21' y1='12' x2='9' y2='12'/%3E%3C/svg%3E");
-    background-size: contain;
-    background-repeat: no-repeat;
-  }
-
-  .app-main {
-    margin-left: 64px;
-  }
 }
 </style>
