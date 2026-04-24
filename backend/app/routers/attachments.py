@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 import os
 from ..database import get_db
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, get_current_user_optional
 from ..models.user import User
 from ..models.note import Note
 from ..models.attachment import Attachment
@@ -55,8 +55,11 @@ async def upload_attachment(
 def download_attachment(
     attachment_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     attachment = (
         db.query(Attachment)
         .join(Note)

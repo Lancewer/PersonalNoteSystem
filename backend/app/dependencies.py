@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from .database import get_db
@@ -28,3 +28,23 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
     return user
+
+
+def get_current_user_optional(
+    token: str | None = Query(None),
+    credentials: HTTPAuthorizationCredentials | None = Depends(
+        HTTPBearer(auto_error=False)
+    ),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Support token from query param or header. Returns None if not authenticated."""
+    token_str = token or (credentials.credentials if credentials else None)
+    if not token_str:
+        return None
+    payload = decode_access_token(token_str)
+    if payload is None:
+        return None
+    user_id = payload.get("sub")
+    if user_id is None:
+        return None
+    return db.query(User).filter(User.id == user_id).first()

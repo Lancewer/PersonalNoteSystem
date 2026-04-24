@@ -10,7 +10,7 @@
       <img
         v-for="att in imageAttachments"
         :key="att.id"
-        :src="`/api/attachments/${att.id}`"
+        :src="getImageUrl(att.id)"
         class="attachment-image"
         loading="lazy"
       />
@@ -34,9 +34,15 @@ defineEmits<{
   delete: [id: string]
 }>()
 
+const token = localStorage.getItem('token')
+
 const imageAttachments = computed(() =>
   props.note.attachments.filter(a => a.file_type === 'image')
 )
+
+function getImageUrl(attId: string): string {
+  return `/api/attachments/${attId}?token=${token}`
+}
 
 function renderContent(content: string): string {
   return content.replace(/#([\w\u4e00-\u9fff/]+)/g, '<span class="tag-inline">#$1</span>')
