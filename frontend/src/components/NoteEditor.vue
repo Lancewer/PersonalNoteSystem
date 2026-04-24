@@ -3,7 +3,7 @@
     <textarea
       v-model="content"
       placeholder="记录你的想法... 使用 #标签 分类"
-      rows="2"
+      rows="6"
       @keydown.enter.ctrl="handleSubmit"
     ></textarea>
     <div v-if="pendingFiles.length" class="file-preview">

@@ -18,7 +18,7 @@
         />
       </div>
       <div class="note-footer">
-        <span class="note-time">{{ formatTime(note.created_at) }}</span>
+        <span class="note-time">{{ displayTime(note.created_at) }}</span>
         <div class="note-actions">
           <button class="edit-btn" @click="startEdit">编辑</button>
           <button class="delete-btn" @click="$emit('delete', note.id)">删除</button>
@@ -29,7 +29,7 @@
       <textarea
         v-model="editContent"
         class="edit-textarea"
-        rows="4"
+        rows="8"
         ref="editTextarea"
       ></textarea>
       <div v-if="editAttachments.length" class="edit-image-grid">
@@ -72,6 +72,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import type { Note, Attachment } from '../types'
+import { formatRelativeTime } from '../utils/time'
 
 const props = defineProps<{
   note: Note
@@ -104,21 +105,6 @@ function renderContent(content: string): string {
   return content.replace(/#([\w\u4e00-\u9fff/]+)/g, '<span class="tag-inline">#$1</span>')
 }
 
-function formatTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes}分钟前`
-  if (hours < 24) return `${hours}小时前`
-  if (days < 7) return `${days}天前`
-  return date.toLocaleDateString('zh-CN')
-}
-
 function getEditImageUrl(att: Attachment | File): string {
   if ('id' in att) {
     return `/api/attachments/${att.id}?token=${token}`
@@ -128,6 +114,10 @@ function getEditImageUrl(att: Attachment | File): string {
 
 function getFileUrl(file: File): string {
   return URL.createObjectURL(file)
+}
+
+function displayTime(dateStr: string): string {
+  return formatRelativeTime(dateStr)
 }
 
 async function startEdit() {
