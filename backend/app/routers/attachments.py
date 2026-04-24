@@ -69,7 +69,9 @@ def download_attachment(
     full_path = os.path.join(settings.UPLOAD_DIR, attachment.file_path)
     real_path = os.path.realpath(full_path)
     real_upload_dir = os.path.realpath(settings.UPLOAD_DIR)
-    if not real_path.startswith(real_upload_dir):
+    if not (
+        real_path.startswith(real_upload_dir + os.sep) or real_path == real_upload_dir
+    ):
         raise HTTPException(status_code=403, detail="Access denied")
     if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail="File not found on disk")
