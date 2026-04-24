@@ -8,6 +8,7 @@
       :key="note.id"
       :note="note"
       @delete="handleDelete"
+      @update="handleUpdate"
     />
     <div v-if="notesStore.loading" class="loading">加载中...</div>
     <NoteEditor @submit="handleCreate" />
@@ -36,6 +37,10 @@ async function handleDelete(id: string) {
   if (confirm('确定删除这条笔记吗？')) {
     await notesStore.removeNote(id)
   }
+}
+
+async function handleUpdate(id: string, content: string) {
+  await notesStore.updateNote(id, content)
 }
 </script>
 

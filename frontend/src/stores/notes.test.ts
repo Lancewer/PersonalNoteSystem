@@ -8,6 +8,7 @@ vi.mock('../api/notes', () => ({
   createNote: vi.fn(),
   deleteNote: vi.fn(),
   uploadAttachment: vi.fn(),
+  updateNote: vi.fn(),
 }))
 
 describe('notes store', () => {
@@ -79,6 +80,40 @@ describe('notes store', () => {
       await store.createNoteWithAttachments('Hello world', [file])
 
       expect(store.notes[0]).toEqual(mockNote)
+    })
+  })
+
+  describe('updateNote', () => {
+    it('should update note content in the store', async () => {
+      const store = useNotesStore()
+      const originalNote = {
+        id: 'note-1',
+        content: 'Original content',
+        created_at: '2026-04-24T12:00:00Z',
+        tags: [],
+        attachments: [],
+      }
+      const updatedNote = {
+        ...originalNote,
+        content: 'Updated content',
+        tags: [{ id: 'tag-1', name: 'new', parent_id: null }],
+      }
+
+      store.notes.push(originalNote)
+      vi.mocked(notesApi.updateNote).mockResolvedValue(updatedNote)
+
+      await store.updateNote('note-1', 'Updated content')
+
+      expect(notesApi.updateNote).toHaveBeenCalledWith('note-1', 'Updated content')
+      expect(store.notes[0].content).toBe('Updated content')
+      expect(store.notes[0].tags).toHaveLength(1)
+    })
+
+    it('should return false if note not found', async () => {
+      const store = useNotesStore()
+      const result = await store.updateNote('non-existent', 'content')
+      expect(result).toBe(false)
+      expect(notesApi.updateNote).not.toHaveBeenCalled()
     })
   })
 })

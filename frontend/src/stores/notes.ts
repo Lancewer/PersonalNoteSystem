@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Note, Tag } from '../types'
-import { getNotes, createNote as apiCreateNote, deleteNote as apiDeleteNote, uploadAttachment } from '../api/notes'
+import { getNotes, createNote as apiCreateNote, deleteNote as apiDeleteNote, uploadAttachment, updateNote as apiUpdateNote } from '../api/notes'
 
 export const useNotesStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
@@ -51,6 +51,14 @@ export const useNotesStore = defineStore('notes', () => {
     notes.value.unshift(newNote)
   }
 
+  async function updateNote(id: string, content: string): Promise<boolean> {
+    const index = notes.value.findIndex(n => n.id === id)
+    if (index === -1) return false
+    const updated = await apiUpdateNote(id, content)
+    notes.value[index] = updated
+    return true
+  }
+
   async function removeNote(id: string) {
     await apiDeleteNote(id)
     notes.value = notes.value.filter(n => n.id !== id)
@@ -60,5 +68,5 @@ export const useNotesStore = defineStore('notes', () => {
     activeTag.value = tag
   }
 
-  return { notes, loading, hasMore, activeTag, fetchNotes, createNote, createNoteWithAttachments, removeNote, filterByTag }
+  return { notes, loading, hasMore, activeTag, fetchNotes, createNote, createNoteWithAttachments, updateNote, removeNote, filterByTag }
 })

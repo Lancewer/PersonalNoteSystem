@@ -1,40 +1,61 @@
 <template>
   <div class="note-card">
-    <p class="note-content" v-html="renderedContent"></p>
-    <div v-if="note.tags.length" class="note-tags">
-      <span v-for="tag in note.tags" :key="tag.id" class="tag">
-        {{ tag.name }}
-      </span>
-    </div>
-    <div v-if="note.attachments.length" class="note-attachments">
-      <img
-        v-for="att in imageAttachments"
-        :key="att.id"
-        :src="getImageUrl(att.id)"
-        class="attachment-image"
-        loading="lazy"
-      />
-    </div>
-    <div class="note-footer">
-      <span class="note-time">{{ formatTime(note.created_at) }}</span>
-      <button class="delete-btn" @click="$emit('delete', note.id)">删除</button>
-    </div>
+    <template v-if="!isEditing">
+      <p class="note-content" v-html="renderedContent"></p>
+      <div v-if="note.tags.length" class="note-tags">
+        <span v-for="tag in note.tags" :key="tag.id" class="tag">
+          {{ tag.name }}
+        </span>
+      </div>
+      <div v-if="note.attachments.length" class="note-attachments">
+        <img
+          v-for="att in imageAttachments"
+          :key="att.id"
+          :src="getImageUrl(att.id)"
+          class="attachment-image"
+          loading="lazy"
+        />
+      </div>
+      <div class="note-footer">
+        <span class="note-time">{{ formatTime(note.created_at) }}</span>
+        <div class="note-actions">
+          <button class="edit-btn" @click="startEdit">编辑</button>
+          <button class="delete-btn" @click="$emit('delete', note.id)">删除</button>
+        </div>
+      </div>
+    </template>
+    <template v-else>
+      <textarea
+        v-model="editContent"
+        class="edit-textarea"
+        rows="4"
+        ref="editTextarea"
+      ></textarea>
+      <div class="edit-actions">
+        <button class="cancel-btn" @click="cancelEdit">取消</button>
+        <button class="save-btn" :disabled="!editContent.trim()" @click="saveEdit">保存</button>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import type { Note } from '../types'
 
 const props = defineProps<{
   note: Note
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   delete: [id: string]
+  update: [id: string, content: string]
 }>()
 
 const token = localStorage.getItem('token')
+const isEditing = ref(false)
+const editContent = ref('')
+const editTextarea = ref<HTMLTextAreaElement | null>(null)
 
 const imageAttachments = computed(() =>
   props.note.attachments.filter(a => a.file_type === 'image')
@@ -61,6 +82,24 @@ function formatTime(dateStr: string): string {
   if (hours < 24) return `${hours}小时前`
   if (days < 7) return `${days}天前`
   return date.toLocaleDateString('zh-CN')
+}
+
+async function startEdit() {
+  editContent.value = props.note.content
+  isEditing.value = true
+  await nextTick()
+  editTextarea.value?.focus()
+}
+
+function cancelEdit() {
+  isEditing.value = false
+  editContent.value = ''
+}
+
+function saveEdit() {
+  if (!editContent.value.trim()) return
+  emit('update', props.note.id, editContent.value)
+  isEditing.value = false
 }
 
 const renderedContent = computed(() => renderContent(props.note.content))
@@ -110,17 +149,66 @@ const renderedContent = computed(() => renderContent(props.note.content))
   border-top: 1px solid var(--border-color);
 }
 
+.note-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .note-time {
   font-size: 12px;
   color: var(--text-secondary);
 }
 
-.delete-btn {
+.edit-btn, .delete-btn, .cancel-btn, .save-btn {
   background: none;
   border: none;
-  color: #e74c3c;
   font-size: 13px;
   cursor: pointer;
   padding: 4px 8px;
+}
+
+.edit-btn {
+  color: var(--primary-color);
+}
+
+.delete-btn {
+  color: #e74c3c;
+}
+
+.cancel-btn {
+  color: var(--text-secondary);
+}
+
+.save-btn {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.edit-textarea {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.edit-textarea:focus {
+  border-color: var(--primary-color);
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
 }
 </style>
