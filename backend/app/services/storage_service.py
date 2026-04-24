@@ -1,5 +1,6 @@
 import os
 import uuid
+import hashlib
 from datetime import datetime
 from fastapi import UploadFile
 from ..config import settings
@@ -22,6 +23,35 @@ def get_file_type(content_type: str) -> str:
     return "file"
 
 
+def compute_file_hash(file_path: str) -> str:
+    """Compute MD5 hash of file content."""
+    md5 = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            md5.update(chunk)
+    return md5.hexdigest()
+
+
+def find_duplicate_in_today_dir(upload_dir: str, file_hash: str) -> str | None:
+    """Find existing file with same hash in today's attachment directory.
+
+    Returns the relative file path if found, None otherwise.
+    Only checks today's directory (YYYY/MM/DD/attachment/).
+    """
+    today_dir = datetime.now().strftime("%Y/%m/%d")
+    today_attachment_dir = os.path.join(upload_dir, today_dir, "attachment")
+
+    if not os.path.exists(today_attachment_dir):
+        return None
+
+    for filename in os.listdir(today_attachment_dir):
+        file_path = os.path.join(today_attachment_dir, filename)
+        if os.path.isfile(file_path) and compute_file_hash(file_path) == file_hash:
+            return os.path.join(today_dir, "attachment", filename)
+
+    return None
+
+
 def generate_file_path(file_type: str, original_name: str) -> str:
     now = datetime.now()
     date_dir = now.strftime("%Y/%m/%d")
@@ -40,6 +70,20 @@ async def save_upload_file(upload_file: UploadFile) -> dict:
     if len(content) > max_size:
         raise ValueError(f"File too large. Max size: {max_size / 1024 / 1024}MB")
 
+    # Compute hash of content
+    content_hash = hashlib.md5(content).hexdigest()
+
+    # Check for duplicate in today's directory
+    existing_path = find_duplicate_in_today_dir(settings.UPLOAD_DIR, content_hash)
+    if existing_path:
+        return {
+            "file_path": existing_path,
+            "file_type": file_type,
+            "file_size": len(content),
+            "is_duplicate": True,
+        }
+
+    # Save new file
     file_path = generate_file_path(file_type, upload_file.filename)
     full_path = os.path.join(settings.UPLOAD_DIR, file_path)
     os.makedirs(os.path.dirname(full_path), exist_ok=True)
@@ -51,4 +95,5 @@ async def save_upload_file(upload_file: UploadFile) -> dict:
         "file_path": file_path,
         "file_type": file_type,
         "file_size": len(content),
+        "is_duplicate": False,
     }
