@@ -1,10 +1,14 @@
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from ..database import Base
 import enum
+
+
+def utcnow():
+    return datetime.now(timezone.utc)
 
 
 class FileType(str, enum.Enum):
@@ -24,6 +28,6 @@ class Attachment(Base):
     file_path = Column(String(255), nullable=False)
     original_name = Column(String(255), nullable=False)
     file_size = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
 
     note = relationship("Note", back_populates="attachments")

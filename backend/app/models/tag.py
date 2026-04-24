@@ -1,9 +1,13 @@
 from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 from ..database import Base
+
+
+def utcnow():
+    return datetime.now(timezone.utc)
 
 
 class Tag(Base):
@@ -15,7 +19,7 @@ class Tag(Base):
     )
     name = Column(String(50), nullable=False)
     parent_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
 
     user = relationship("User")
     parent = relationship("Tag", remote_side=[id], backref="children")
