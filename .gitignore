@@ -17,3 +17,8 @@ frontend/.vite/
 # IDE
 .vscode/
 .idea/
+
+# Docker
+data/
+.env.local
+.env.docker.bak
