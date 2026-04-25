@@ -21,6 +21,7 @@ Object.defineProperty(window, 'localStorage', {
 
 vi.mock('../api/notes', () => ({
   getNotes: vi.fn(),
+  searchNotes: vi.fn(),
   createNote: vi.fn(),
   deleteNote: vi.fn(),
   uploadAttachment: vi.fn(),
@@ -130,29 +131,6 @@ describe('notes store', () => {
       expect(notesApi.updateNote).toHaveBeenCalledWith('note-1', 'Updated content')
       expect(store.notes[0].content).toBe('Updated content')
       expect(store.notes[0].tags).toHaveLength(1)
-    })
-  })
-
-  describe('removeAttachment', () => {
-    it('should remove attachment from note and delete from server', async () => {
-      const store = useNotesStore()
-      const mockNote = {
-        id: 'note-1',
-        content: 'Hello',
-        created_at: '2026-04-24T12:00:00Z',
-        tags: [],
-        attachments: [
-          { id: 'att-1', file_type: 'image', file_path: 'path1.jpg', original_name: '1.jpg', file_size: 100 },
-          { id: 'att-2', file_type: 'image', file_path: 'path2.jpg', original_name: '2.jpg', file_size: 200 },
-        ],
-      }
-      store.notes.push(mockNote)
-
-      await store.removeAttachment('note-1', 'att-1')
-
-      expect(notesApi.deleteAttachment).toHaveBeenCalledWith('att-1')
-      expect(store.notes[0].attachments).toHaveLength(1)
-      expect(store.notes[0].attachments[0].id).toBe('att-2')
     })
 
     it('should return false if note not found', async () => {

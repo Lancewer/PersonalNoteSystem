@@ -26,10 +26,15 @@ body {
 }
 
 #app {
-  max-width: 768px;
-  margin: 0 auto;
+  width: 100%;
   min-height: 100vh;
   background-color: var(--bg-color);
+}
+
+@media (max-width: 768px) {
+  #app {
+    max-width: 100%;
+  }
 }
 
 input, textarea, button {

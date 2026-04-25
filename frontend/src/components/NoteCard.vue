@@ -240,6 +240,14 @@ function closeImageModal() {
   transition: background-color 0.2s, box-shadow 0.2s;
 }
 
+@media (max-width: 768px) {
+  .note-card {
+    padding: 16px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+  }
+}
+
 .note-card:hover {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
@@ -271,10 +279,18 @@ function closeImageModal() {
 }
 
 .note-expand-hint {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--primary-color);
-  margin-top: 8px;
+  margin-top: 6px;
   margin-bottom: 0;
+  cursor: pointer;
+  display: inline-block;
+}
+
+@media (max-width: 768px) {
+  .note-expand-hint {
+    font-size: 12px;
+  }
 }
 
 .note-tags {
@@ -284,12 +300,25 @@ function closeImageModal() {
   margin-bottom: 12px;
 }
 
+@media (max-width: 768px) {
+  .note-tags {
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  
+  .note-tag {
+    font-size: 12px;
+    padding: 2px 8px;
+  }
+}
+
 .note-tag {
   font-size: 13px;
   color: var(--primary-color);
-  background: rgba(74, 144, 217, 0.08);
-  padding: 2px 8px;
-  border-radius: 4px;
+  background: rgba(74, 144, 217, 0.12);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 500;
 }
 
 .note-attachments {
@@ -308,6 +337,14 @@ function closeImageModal() {
   transition: transform 0.2s, opacity 0.2s;
 }
 
+@media (max-width: 768px) {
+  .note-attachment-thumb {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+  }
+}
+
 .note-attachment-thumb:hover {
   transform: scale(1.03);
   opacity: 0.85;
@@ -324,6 +361,17 @@ function closeImageModal() {
 .note-time {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .note-time {
+    font-size: 11px;
+  }
+  
+  .note-action-btn {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 .note-actions {

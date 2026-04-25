@@ -16,6 +16,7 @@ export interface Tag {
   name: string
   parent_id: string | null
   children?: Tag[]
+  note_count?: number
 }
 
 export interface Attachment {

@@ -136,15 +136,17 @@ async function handleUpdate(id: string, content: string, newFiles: File[], remov
 */
 
 .timeline-container {
-  max-width: 720px;
+  max-width: 860px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 32px 32px;
   padding-bottom: 48px;
 }
 
 @media (max-width: 768px) {
   .timeline-container {
-    padding: 16px;
+    padding: 16px 16px 48px 16px;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 

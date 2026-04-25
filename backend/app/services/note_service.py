@@ -4,6 +4,7 @@ import re
 from ..models.note import Note
 from ..models.tag import Tag, NoteTag
 from ..schemas.note import NoteCreate, NoteResponse, NoteListResponse
+from .tag_service import cleanup_orphan_tags
 
 PAGE_SIZE = 20
 
@@ -53,6 +54,7 @@ def update_note(db: Session, note_id: UUID, user_id: UUID, content: str) -> Note
         tag = get_or_create_tag(db, user_id, tag_name)
         db.add(NoteTag(note_id=note_id, tag_id=tag.id))
     db.commit()
+    cleanup_orphan_tags(db, user_id)
     db.refresh(note)
     return note
 
@@ -63,6 +65,7 @@ def delete_note(db: Session, note_id: UUID, user_id: UUID) -> bool:
         return False
     db.delete(note)
     db.commit()
+    cleanup_orphan_tags(db, user_id)
     return True
 
 

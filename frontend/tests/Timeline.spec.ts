@@ -1,3 +1,4 @@
+import type { ComponentPublicInstance } from 'vue'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -84,7 +85,8 @@ describe('Timeline.vue', () => {
 
     // Emit search-open from AppLayout stub
     const appLayout = wrapper.findComponent({ name: 'AppLayout' })
-    ;(appLayout.vm as any).$emit('search-open')
+    const appLayoutInstance = appLayout.vm as ComponentPublicInstance
+    appLayoutInstance.$emit('search-open')
     await wrapper.vm.$nextTick()
     await flushPromises()
 

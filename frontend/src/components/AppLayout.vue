@@ -112,24 +112,26 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
   display: none;
 }
 
-@media (min-width: 769px) {
-  .desktop-sidebar {
-    display: flex;
-    width: 240px;
-    background: var(--card-bg);
-    border-right: 1px solid var(--border-color);
-    flex-direction: column;
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 10;
+  @media (min-width: 769px) {
+    .desktop-sidebar {
+      display: flex;
+      width: 240px;
+      background: var(--card-bg);
+      border-right: 1px solid var(--border-color);
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 10;
+    }
+    
+    .app-main {
+      margin-left: 240px;
+      width: calc(100vw - 240px);
+      flex: 1;
+    }
   }
-  
-  .app-main {
-    margin-left: 240px;
-  }
-}
 
 /* Mobile Drawer */
 .sidebar-drawer {
@@ -182,6 +184,8 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 @media (max-width: 768px) {
   .app-main {
     padding-top: 56px;
+    width: 100%;
+    overflow-x: hidden;
   }
 }
 

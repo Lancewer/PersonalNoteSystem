@@ -13,6 +13,7 @@ class TagTreeNode(BaseModel):
     name: str
     parent_id: Optional[UUID] = None
     children: List["TagTreeNode"] = []
+    note_count: int = 0
 
     class Config:
         from_attributes = True

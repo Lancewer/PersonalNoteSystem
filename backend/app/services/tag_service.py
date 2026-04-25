@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from uuid import UUID
 from ..models.tag import Tag, NoteTag
 from ..models.note import Note
@@ -15,9 +16,22 @@ def create_tag(db: Session, user_id: UUID, name: str, parent_id: UUID = None) ->
 
 def get_tag_tree(db: Session, user_id: UUID) -> list[TagTreeNode]:
     all_tags = db.query(Tag).filter(Tag.user_id == user_id).all()
+
+    tag_counts = dict(
+        db.query(NoteTag.tag_id, func.count(NoteTag.note_id))
+        .join(Tag, NoteTag.tag_id == Tag.id)
+        .filter(Tag.user_id == user_id)
+        .group_by(NoteTag.tag_id)
+        .all()
+    )
+
     tag_dict = {
         str(tag.id): TagTreeNode(
-            id=tag.id, name=tag.name, parent_id=tag.parent_id, children=[]
+            id=tag.id,
+            name=tag.name,
+            parent_id=tag.parent_id,
+            children=[],
+            note_count=tag_counts.get(tag.id, 0),
         )
         for tag in all_tags
     }
@@ -30,7 +44,38 @@ def get_tag_tree(db: Session, user_id: UUID) -> list[TagTreeNode]:
             parent = tag_dict.get(str(node.parent_id))
             if parent:
                 parent.children.append(node)
+
+    for root in roots:
+        _update_total_counts(root)
+
     return roots
+
+
+def _update_total_counts(node: TagTreeNode):
+    for child in node.children:
+        _update_total_counts(child)
+    total = node.note_count
+    for child in node.children:
+        total += child.note_count
+    node.note_count = total
+
+
+def cleanup_orphan_tags(db: Session, user_id: UUID):
+    while True:
+        orphan_tags = (
+            db.query(Tag)
+            .outerjoin(NoteTag, Tag.id == NoteTag.tag_id)
+            .filter(
+                Tag.user_id == user_id,
+                NoteTag.tag_id == None,
+            )
+            .all()
+        )
+        if not orphan_tags:
+            break
+        for tag in orphan_tags:
+            db.delete(tag)
+        db.commit()
 
 
 def get_notes_by_tag(
